@@ -7,6 +7,14 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AddDatasource: typeof import('./src/components/AddDatasource.vue')['default']
+    ConnectAirbyte: typeof import('./src/components/ConnectAirbyte.vue')['default']
+    ConnectAirByte: typeof import('./src/components/ConnectAirByte.vue')['default']
+    ConnectionForm: typeof import('./src/components/ConnectionForm.vue')['default']
+    ConnectMotherduck: typeof import('./src/components/ConnectMotherduck.vue')['default']
+    ConnectRepository: typeof import('./src/components/ConnectRepository.vue')['default']
+    copy: typeof import('./src/components/ImportWizard copy.vue')['default']
+    DynamicFields: typeof import('./src/components/DynamicFields.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     ImportWizard: typeof import('./src/components/ImportWizard.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

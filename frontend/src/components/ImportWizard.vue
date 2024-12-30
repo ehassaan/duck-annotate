@@ -1,26 +1,54 @@
 <template>
-    <v-form @submit.prevent="getToken">
-        <v-text-field v-model="clientId" label="Client ID"></v-text-field>
-        <v-text-field v-model="clientSecret" label="Client Secret"></v-text-field>
-        <v-btn class="mt-2" type="submit" block>Submit</v-btn>
-    </v-form>
+
+    <v-card>
+        <v-card-title>Import Wizard</v-card-title>
+
+        <v-tabs v-model="tab" grow>
+            <v-tab value="datalake">
+                Connect Datalake
+            </v-tab>
+            <v-tab value="information">
+                Select Information Sources
+            </v-tab>
+            <v-tab value="annotate">
+                Annotate
+            </v-tab>
+        </v-tabs>
+
+        <v-window v-model="tab">
+            <v-window-item value="datalake">
+                <v-card class="ma-4 pa-4">
+                    <v-card-title>Connect Motherduck</v-card-title>
+                    <ConnectMotherduck @submit="connectMotherduck"></ConnectMotherduck>
+                </v-card>
+            </v-window-item>
+            <v-window-item value="information">
+                <v-card class="ma-4 pa-4">
+                    <v-card-title>Select Repository</v-card-title>
+                    <ConnectRepository @submit="connectMotherduck"></ConnectRepository>
+                </v-card>
+            </v-window-item>
+        </v-window>
+
+        <v-card class="ma-4 pa-4">
+            <pre>asd</pre>
+        </v-card>
+    </v-card>
 
 </template>
 
 <script setup lang="ts">
 
-import axios from 'axios';
 import { ref } from 'vue';
+import ConnectMotherduck from './ConnectMotherduck.vue';
+import ConnectRepository from './ConnectRepository.vue';
 
-const clientId = ref("c926f1a0-66e9-4616-ad8d-959c0c9cba22");
-const clientSecret = ref("OGKiChgDLkFGPRBfRqzN55758QYFU77o");
+const tab = ref("datasource");
 
-async function getToken() {
-    const res = await axios.post("/api/airbyte/connect", {
-        clientId: clientId.value,
-        clientSecret: clientSecret.value
-    });
-    console.log(res);
+async function connectMotherduck(data: any) {
+    localStorage.setItem("motherduck", JSON.stringify(data));
+    tab.value = "information";
 }
+
 
 </script>
