@@ -12,6 +12,7 @@
     "lint": "eslint . --fix"
   },
   "dependencies": {
+    "@isomorphic-git/lightning-fs": "^4.6.0",
     "@mdi/font": "7.4.47",
     "@motherduck/wasm-client": "^0.6.6",
     "@zenfs/core": "^1.6.16",
@@ -20,6 +21,7 @@
     "better-auth": "^1.1.4",
     "better-fetch": "^1.1.2",
     "core-js": "^3.37.1",
+    "isomorphic-git": "^1.27.2",
     "roboto-fontface": "*",
     "vue": "^3.4.31",
     "vuetify": "^3.6.14"

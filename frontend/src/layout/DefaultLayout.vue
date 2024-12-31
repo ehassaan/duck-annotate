@@ -3,7 +3,7 @@
     <template v-slot:prepend>
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
     </template>
-    <v-app-bar-title>ShadowLake</v-app-bar-title>
+    <v-app-bar-title>DuckAnnotate</v-app-bar-title>
   </v-app-bar>
 
   <v-navigation-drawer v-model="drawer" :location="$vuetify.display.mobile ? 'bottom' : undefined">

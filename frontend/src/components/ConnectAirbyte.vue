@@ -12,7 +12,7 @@
 import axios from 'axios';
 import { ref } from 'vue';
 
-const clientId = ref("c926f1a0-66e9-4616-ad8d-959c0c9cba22");
+const clientId = ref("");
 const clientSecret = ref("");
 
 async function connectAirbyte() {

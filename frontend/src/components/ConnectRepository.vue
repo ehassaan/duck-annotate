@@ -62,7 +62,7 @@ async function fetchSchemas() {
     try {
         if (!connection) {
             connection = MDConnection.create({
-                mdToken: vmRepo.value,
+                mdToken: vmMotherduck.value.token,
             });
             await connection.isInitialized();
         }
