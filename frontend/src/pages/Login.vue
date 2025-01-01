@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import { authClient, signinSocial } from '@/libs/auth';
+import { authClient, signinSocial } from '@/utils/auth';
 
 const session = authClient.useSession();
 </script>

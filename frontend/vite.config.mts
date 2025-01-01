@@ -58,8 +58,15 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+      },
+      '/git': {
+        target: 'https://github.com',
+        changeOrigin: true
       }
     }
+  },
+  optimizeDeps: {
+    exclude: ['tree-sitter', 'tree-sitter-python']
   },
   css: {
     preprocessorOptions: {

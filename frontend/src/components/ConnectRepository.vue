@@ -1,16 +1,17 @@
 <template>
-    <v-form>
-        <v-label class="mb-2">{{ message }}</v-label>
+    <v-form :class="$style.form">
         <v-select v-on:click="fetchSchemas" :loading="loadingSchemas" v-model="vmSchema" :items="vmAllSchemas"
-            label="Select Schema" @update:model-value="fetchRepos"
+            label="Select Schema" @update:model-value="fetchRepos" :class="$style.field"
             hint="Selected repository must already be synced to the selected schema using AirByte Github Connector"></v-select>
 
         <v-select v-model="vmRepo" :items="vmAllRepos" :loading="loadingRepos" label="Select Repository"
-            hint="Select the repository used to infer the column and table metadata"></v-select>
+            :class="$style.field" hint="Select the repository used to infer the column and table metadata"></v-select>
 
-        <v-select label="Authentication" :items="['Public', 'Github SSO']"></v-select>
+        <v-select label="Authentication" :class="$style.field" :items="['Public', 'Github SSO']"></v-select>
 
-        <v-btn color="primary" :loading="loadingClone" @click="clone" type="button">Clone</v-btn>
+        <v-btn :class="$style.button" color="primary" :loading="loadingClone" @click="clone" type="button">Clone</v-btn>
+
+        <v-label :class="$style.field">{{ message }}</v-label>
 
         <!-- <v-btn :loading="loading" class="mt-2" type="button" @click="connect" block color="primary">Connect</v-btn> -->
 
@@ -28,7 +29,8 @@
 
 import { onBeforeMount, ref, type PropType } from 'vue';
 import { MDConnection } from '@motherduck/wasm-client';
-import { cloneRepo } from '@/libs/git';
+import { cloneRepo } from '@/utils/gitHelper';
+import { getAllChunks, scanDirectory } from '@/utils/repoHelper';
 
 const vmMotherduck = ref({
     tables: [],
@@ -107,14 +109,25 @@ async function fetchRepos(schema: string) {
 async function clone() {
     loadingClone.value = true;
     try {
-        await cloneRepo();
+        message.value = "Cloning...";
+        const dir = await cloneRepo();
+        await scanRepo(dir);
     }
-    catch(err) {
+    catch (err) {
         console.log("Error while cloning: ", err);
     }
     finally {
         loadingClone.value = false;
+        message.value = "";
     }
+}
+
+async function scanRepo(dir: FileSystemDirectoryHandle) {
+    message.value = "Scanning Repository...";
+    const files = await scanDirectory(dir, ".+[.]py");
+    message.value = `$Analyzing ${files.length} files...`;
+    const chunks = await getAllChunks(files, 1000);
+    console.log("Files: ", files, chunks);
 }
 
 // async function connect() {
@@ -156,3 +169,18 @@ async function clone() {
 // }
 
 </script>
+
+<style module>
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.field {
+    margin: 5px 0;
+}
+
+.button {
+    align-self: flex-start;
+}
+</style>

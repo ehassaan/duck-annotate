@@ -12,7 +12,7 @@
 import axios from 'axios';
 import { ref } from 'vue';
 import DynamicFields from './DynamicFields.vue';
-import { sourceOptions } from "../libs/sourceOptions";
+import { sourceOptions } from "../utils/sourceOptions";
 
 const sourceTypes = Object.keys(sourceOptions);
 const sourceType = ref("postgres");
