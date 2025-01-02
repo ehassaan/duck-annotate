@@ -9,9 +9,13 @@
 
         <v-select label="Authentication" :class="$style.field" :items="['Public', 'Github SSO']"></v-select>
 
-        <v-btn :class="$style.button" color="primary" :loading="loadingClone" @click="clone" type="button">Clone</v-btn>
+        <v-btn :class="$style.button" color="primary" :loading="loadingClone" @click="clone" type="button">Scan</v-btn>
+
 
         <v-label :class="$style.field">{{ message }}</v-label>
+
+        <v-btn :class="$style.button" color="primary" :loading="loadingClone" @click="testVectors"
+            type="button">Vectorize</v-btn>
 
         <!-- <v-btn :loading="loading" class="mt-2" type="button" @click="connect" block color="primary">Connect</v-btn> -->
 
@@ -29,8 +33,9 @@
 
 import { onBeforeMount, ref, type PropType } from 'vue';
 import { MDConnection } from '@motherduck/wasm-client';
-import { cloneRepo } from '@/utils/gitHelper';
-import { getAllChunks, scanDirectory } from '@/utils/repoHelper';
+import { cloneRepo } from '@/utils/gitUtil';
+import { getAllChunks, scanDirectory, type Chunk } from '@/utils/scanUtil';
+import { initializeEngine, search } from '@/utils/embeddingUtil';
 
 const vmMotherduck = ref({
     tables: [],
@@ -126,8 +131,24 @@ async function scanRepo(dir: FileSystemDirectoryHandle) {
     message.value = "Scanning Repository...";
     const files = await scanDirectory(dir, ".+[.]py");
     message.value = `$Analyzing ${files.length} files...`;
-    const chunks = await getAllChunks(files, 1000);
+    const chunks = await getAllChunks(files, 500);
     console.log("Files: ", files, chunks);
+    localStorage.setItem("chunks", JSON.stringify(chunks));
+}
+
+function testVectors() {
+    const chunkStr = localStorage.getItem("chunks");
+    if (!chunkStr) return;
+    const chunks = JSON.parse(chunkStr) as Chunk[];
+    console.log("Loadded Chunks: ", chunks.length);
+    vectorize(chunks);
+}
+
+function vectorize(chunks: Chunk[]) {
+    const engine = initializeEngine(chunks);
+    const results = search(engine, "product");
+    console.log(results);
+    console.log(engine);
 }
 
 // async function connect() {
