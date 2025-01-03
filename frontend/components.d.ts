@@ -8,6 +8,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AddDatasource: typeof import('./src/components/AddDatasource.vue')['default']
+    Annotate: typeof import('./src/components/Annotate.vue')['default']
+    AnnotateTables: typeof import('./src/components/AnnotateTables.vue')['default']
     ConnectAirbyte: typeof import('./src/components/ConnectAirbyte.vue')['default']
     ConnectAirByte: typeof import('./src/components/ConnectAirByte.vue')['default']
     ConnectionForm: typeof import('./src/components/ConnectionForm.vue')['default']

@@ -1,20 +1,30 @@
 <template>
-    <v-form>
-        <v-text-field required v-model="vmName" label="Database Name"></v-text-field>
-        <v-text-field required v-model="vmToken" label="Token"></v-text-field>
+    <v-form :class="$style.form">
 
-        <v-btn :loading="loading" class="button" type="button" @click="connect" block color="primary">Connect</v-btn>
+        <v-label :class="$style.field">{{ message }}</v-label>
 
-        <v-label class="field">{{ message }}</v-label>
+        <v-btn v-if="props.token" :class="$style.button" type="button" @click="disconnect" block
+            color="primary">Disconnect</v-btn>
 
-        <v-select v-model="vmSchema" class="field" :items="schemas" @update:model-value="fetchTables"
-            label="Select Schema to Annotate"></v-select>
+        <v-text-field density="compact" :class="$style.field" v-if="!props.token" required v-model="vmToken"
+            label="Token"></v-text-field>
 
-        <v-checkbox label="Annotate all tables" class="field" v-model="vmIsAllTables"></v-checkbox>
-        <v-select v-if="!vmIsAllTables" class="field" v-model="vmSelectedTables" :loading="loadingTables"
-            :items="tables" multiple label="Select Tables to Annotate"></v-select>
+        <v-btn v-if="!props.token" :loading="loading" :class="$style.button" type="button" @click="connect" block
+            color="primary">Connect</v-btn>
 
-        <v-btn class="button" type="button" @click="submit" block color="primary">Next</v-btn>
+        <v-select density="compact" v-model="vmDatabase" :class="$style.field" :items="databases"
+            @update:model-value="fetchSchemas" label="Select Database"></v-select>
+
+        <v-select density="compact" :class="$style.field" v-model="vmSchema" :items="schemas"
+            @update:model-value="fetchTables" label="Select Schema to Annotate"></v-select>
+
+        <v-checkbox density="compact" :class="$style.field" label="Annotate all tables"
+            v-model="vmIsAllTables"></v-checkbox>
+
+        <v-select density="compact" v-if="!vmIsAllTables" :class="$style.field" v-model="vmSelectedTables"
+            :loading="loadingTables" :items="tables" multiple label="Select Tables to Annotate"></v-select>
+
+        <v-btn :class="$style.button" type="button" @click="submit" block color="primary">Save</v-btn>
 
     </v-form>
 
@@ -22,88 +32,137 @@
 
 <script setup lang="ts">
 
-import { ref } from 'vue';
-import { MDConnection } from '@motherduck/wasm-client';
+import { onMounted, ref } from 'vue';
+import * as md from "@/utils/mdUtil";
 
-const vmName = ref("");
-const vmToken = ref("");
+const props = defineProps({
+    token: {
+        type: String,
+        required: false
+    },
+    database: {
+        type: String,
+        default: "main"
+    },
+    schema: {
+        type: String,
+        default: "main"
+    }
+});
+const emit = defineEmits(["connect", "submit", "disconnect"]);
+const vmToken = ref(props.token ?? "");
 const vmSchema = ref<string>();
-const emit = defineEmits(["connect", "submit"]);
+const vmDatabase = ref(props.database);
 const message = ref("");
 const loading = ref(false);
+const databases = ref<string[]>([]);
 const schemas = ref<string[]>([]);
 const tables = ref<string[]>([]);
 const loadingTables = ref(false);
 const vmIsAllTables = ref(true);
 const vmSelectedTables = ref<string[]>([]);
-let connection: MDConnection | null = null;
-const connValues: {
-    database?: string,
-    token?: string,
-    schema?: string,
-    tables?: string[];
-} = {};
+
+onMounted(async () => {
+    if (!vmToken.value) {
+        return;
+    }
+    await connect();
+    await fetchSchemas();
+    await fetchTables(props.schema);
+    vmDatabase.value = props.database;
+    vmSchema.value = props.schema;
+});
+
+async function disconnect() {
+    await md.disconnect();
+    vmToken.value = "";
+    emit('disconnect');
+}
 
 async function connect() {
+    if (!vmToken.value) {
+        message.value = "Error: Token is null";
+        return;
+    }
     message.value = "Connecting...";
     loading.value = true;
 
     try {
-        connection = MDConnection.create({
-            mdToken: vmToken.value,
-        });
-        await connection.isInitialized();
-        const schemaRes = await connection.evaluatePreparedStatement("select schema_name from information_schema.schemata where catalog_name=?", [vmName.value]);
-        console.log('query result', schemaRes);
-        message.value = `Connection Successful. ${schemaRes.data.rowCount} schemas found.`;
-        schemas.value = schemaRes.data.toRows().map((r: any) => r.schema_name) as string[];
-
+        await md.connect(vmToken.value);
+        const dbRes = await md.fetchDatabases();
+        message.value = `Connection Successful. ${dbRes.length} databases found.`;
+        databases.value = dbRes;
     } catch (err) {
         console.log('query failed', err);
         message.value = `Connection Failed: ${err}`;
-        loading.value = false;
         return;
     }
-    connValues.database = vmName.value;
-    connValues.token = vmToken.value;
+    finally {
+        loading.value = false;
+    }
+}
 
-    emit('connect', { name: vmName.value, token: vmToken.value });
+async function fetchSchemas() {
+    if (!md.db) {
+        return;
+    }
+    loading.value = true;
+    try {
+        const schemaRes = await md.fetchSchemas(vmDatabase.value);
+        console.log('query result', schemaRes);
+        schemas.value = schemaRes;
+    } catch (err) {
+        console.log('query failed', err);
+    }
+    finally {
+        loading.value = false;
+    }
     loading.value = false;
 }
 
 async function fetchTables(schema: string) {
     console.log("Fetching tables: ", schema);
-    if (!connection) {
+    if (!md.db) {
         return;
     }
-    connValues.schema = schema;
     loadingTables.value = true;
-    const tableRes = await connection.evaluatePreparedStatement("select distinct table_name from information_schema.tables where table_catalog=? and table_schema=?", [vmName.value, schema]);
+    const tableRes = await md.fetchTables(vmDatabase.value, schema);
     console.log('query result', tableRes);
-    tables.value = tableRes.data.toRows().map((r: any) => r.table_name) as string[];
+    tables.value = tableRes;
     loadingTables.value = false;
 }
 
 async function submit() {
+    let tableList: string[];
     if (vmIsAllTables.value) {
-        connValues.tables = { ...tables.value };
+        tableList = { ...tables.value };
     }
     else {
-        connValues.tables = { ...vmSelectedTables.value };
+        tableList = { ...vmSelectedTables.value };
     }
+    const connValues = {
+        database: vmDatabase.value, token: vmToken.value, schema: vmSchema.value,
+        tables: tableList
+    };
     console.log("Submitting: ", connValues);
     emit("submit", connValues);
 }
 
 </script>
-<style scoped>
+<style module>
+.form {
+    display: flex;
+    flex-direction: column;
+}
 
 .button {
     min-width: 70px;
-    margin: 5px 0;
+    margin: 8px 0;
+    min-width: 150px !important;
+    align-self: flex-start;
 }
 
 .field {
-    margin: 5px 0;
+    margin-top: 12px;
 }
 </style>

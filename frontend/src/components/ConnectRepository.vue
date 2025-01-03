@@ -36,6 +36,7 @@ import { MDConnection } from '@motherduck/wasm-client';
 import { cloneRepo } from '@/utils/gitUtil';
 import { getAllChunks, scanDirectory, type Chunk } from '@/utils/scanUtil';
 import { initializeEngine, search } from '@/utils/embeddingUtil';
+import * as storage from "@/utils/storageUtil";
 
 const vmMotherduck = ref({
     tables: [],
@@ -130,17 +131,16 @@ async function clone() {
 async function scanRepo(dir: FileSystemDirectoryHandle) {
     message.value = "Scanning Repository...";
     const files = await scanDirectory(dir, ".+[.]py");
-    message.value = `$Analyzing ${files.length} files...`;
+    message.value = `Analyzing ${files.length} files...`;
     const chunks = await getAllChunks(files, 500);
     console.log("Files: ", files, chunks);
-    localStorage.setItem("chunks", JSON.stringify(chunks));
+    await storage.setKey("chunks", chunks);
 }
 
-function testVectors() {
-    const chunkStr = localStorage.getItem("chunks");
-    if (!chunkStr) return;
-    const chunks = JSON.parse(chunkStr) as Chunk[];
-    console.log("Loadded Chunks: ", chunks.length);
+
+async function testVectors() {
+    const chunks = await storage.getKey<Chunk[]>("chunks");
+    console.log("Loadded Chunks: ", chunks);
     vectorize(chunks);
 }
 

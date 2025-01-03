@@ -19,36 +19,62 @@
             <v-window-item value="datalake">
                 <v-card class="ma-4 pa-4">
                     <v-card-title>Connect Motherduck</v-card-title>
-                    <ConnectMotherduck @submit="connectMotherduck"></ConnectMotherduck>
+                    <ConnectMotherduck :token="vmConnInfo?.token" :database="vmConnInfo?.database"
+                        :schema="vmConnInfo?.schema" @submit="saveCreds" @disconnect="disconnect">
+                    </ConnectMotherduck>
                 </v-card>
             </v-window-item>
+
             <v-window-item value="information">
                 <v-card class="ma-4 pa-4">
                     <v-card-title>Select Repository</v-card-title>
-                    <ConnectRepository @submit="connectMotherduck"></ConnectRepository>
+                    <ConnectRepository @submit="saveCreds"></ConnectRepository>
+                </v-card>
+            </v-window-item>
+
+            <v-window-item value="annotate">
+                <v-card class="ma-4 pa-4">
+                    <v-card-title>Annotate</v-card-title>
+                    <AnnotateTables :database="vmConnInfo?.database" :schema="vmConnInfo?.schema"
+                        :token="vmConnInfo?.token"></AnnotateTables>
                 </v-card>
             </v-window-item>
         </v-window>
 
-        <v-card class="ma-4 pa-4">
-            <pre>asd</pre>
-        </v-card>
     </v-card>
 
 </template>
 
 <script setup lang="ts">
 
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import ConnectMotherduck from './ConnectMotherduck.vue';
 import ConnectRepository from './ConnectRepository.vue';
+import AnnotateTables from './AnnotateTables.vue';
 
 const tab = ref("datasource");
+const vmConnInfo = ref<{ database: string, token: string; schema: string; }>();
 
-async function connectMotherduck(data: any) {
+onMounted(() => {
+    try {
+        const conStr = localStorage.getItem("motherduck");
+        if (conStr) {
+            const connInfo = JSON.parse(conStr);
+            vmConnInfo.value = connInfo;
+        }
+    }
+    catch (err) {
+        console.log("Failed to connect to motherduck: ", err);
+    }
+});
+
+async function saveCreds(data: any) {
     localStorage.setItem("motherduck", JSON.stringify(data));
     tab.value = "information";
 }
 
+async function disconnect() {
+    localStorage.removeItem("motherduck");
+}
 
 </script>
