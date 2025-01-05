@@ -7,46 +7,69 @@ import type { Chunk } from './scanUtil';
 const nlp = winkNLP(model);
 const its = nlp.its;
 
+
+export interface SimilarityMatch {
+    name: string | null;
+    text: string;
+    file: string;
+    type: string;
+    score: number;
+}
+
 function tokenize(text: string) {
     if (!text) return [];
 
     const tokens: string[] = [];
     nlp.readDoc(text)
         .tokens()
-        // Use only words ignoring punctuations etc and from them remove stop words
         .filter((t) => (t.out(its.type) === 'word' && !t.out(its.stopWordFlag)))
-        // Handle negation and extract stem of the word
         .each((t: ItemToken) => {
             const token = (t.out(its.negationFlag)) ? '!' + t.out(its.stem) : t.out(its.stem);
-            toSnakeCase(token).split('_').forEach((word) => tokens.push(word));
+            const snakeCase = toSnakeCase(token);
+            if (!snakeCase) return;
+            snakeCase.split('_').forEach((word) => tokens.push(word));
         });
     return tokens;
 }
 
-export function initializeEngine(chunks: Chunk[]) {
-    var engine = bm25();
-    engine.defineConfig({ fldWeights: { name: 1, file: 1, text: 3 } });
-
+export function createEngine() {
+    const engine = bm25();
+    engine.defineConfig({ fldWeights: { name: 1, file: 1, text: 1 }, ovFldNames: ['name', 'file', 'text', 'type'] });
     engine.definePrepTasks([tokenize]);
-
-    chunks.forEach(function (doc, i) {
-        engine.addDoc(doc, i);
-    });
-    engine.consolidate();
     return engine;
 }
 
+export async function indexDocs(engine: any, chunks: Chunk[]) {
+    for (const [i, doc] of chunks.entries()) {
+        engine.addDoc(doc, i);
+        await new Promise(resolve => setTimeout(resolve, 0));
+    }
+    engine.consolidate();
+}
 
-export function search(engine: any, query: string) {
-    return engine.search(query);
+export function serializeEngine(engine: any) {
+    return engine.exportJSON() as string;
+}
+
+export function deserializeEngine(data: string) {
+    const engine = createEngine();
+    engine.importJSON(data);
+    return engine;
+}
+
+export function search(engine: any, query: string, minScore: number = 80) {
+    let res = engine.search(query) as [number, string][];
+    const docs = engine.getDocs();
+    let results = res.map((r: any) => ({ ...docs[parseInt(r[0])].fieldValues, score: r[1] }));
+    results = results.filter((r: any) => r.score >= minScore);
+    return results as SimilarityMatch[];
 }
 
 function toSnakeCase(text: string) {
     const reg = /[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g;
     const match = text.match(reg);
     if (!match) {
-        console.log('SnakeCase - Skipped: ', text);
-        return text;
+        return null;
     };
     return match.map(x => x.toLowerCase()).join('_');
 }

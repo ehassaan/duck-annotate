@@ -10,19 +10,18 @@ export async function configure() {
     await configureSingle({ backend: WebAccess, handle: dir });
 }
 
-
-export async function setKey(key: string, value: any) {
+export async function setKey(key: string, value: string) {
     const path = '/keyval/' + key;
     try {
         await fs.mkdir('/keyval');
     }
     catch (e) {
-
+        console.warn("Exists: ", e)
     }
-    await fs.writeFile(path, JSON.stringify(value));
+    await fs.writeFile(path, value);
 }
 
-export async function getKey<T = any>(key: string) {
+export async function getKey(key: string) {
     const path = '/keyval/' + key;
-    return JSON.parse((await fs.readFile(path)).toString('utf8')) as T;
+    return (await fs.readFile(path)).toString('utf8');
 }

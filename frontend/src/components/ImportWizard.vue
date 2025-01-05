@@ -1,7 +1,6 @@
 <template>
 
-    <v-card>
-        <v-card-title>Import Wizard</v-card-title>
+    <v-card :class="[$style.card, 'fill-height']">
 
         <v-tabs v-model="tab" grow>
             <v-tab value="datalake">
@@ -15,9 +14,9 @@
             </v-tab>
         </v-tabs>
 
-        <v-window v-model="tab">
-            <v-window-item value="datalake">
-                <v-card class="ma-4 pa-4">
+        <v-window v-model="tab" class="fill-height">
+            <v-window-item value="datalake" class="fill-height">
+                <v-card class="ma-4 pa-4 fill-height">
                     <v-card-title>Connect Motherduck</v-card-title>
                     <ConnectMotherduck :token="vmConnInfo?.token" :database="vmConnInfo?.database"
                         :schema="vmConnInfo?.schema" @submit="saveCreds" @disconnect="disconnect">
@@ -26,15 +25,14 @@
             </v-window-item>
 
             <v-window-item value="information">
-                <v-card class="ma-4 pa-4">
+                <v-card class="ma-4 pa-4 fill-height">
                     <v-card-title>Select Repository</v-card-title>
                     <ConnectRepository @submit="saveCreds"></ConnectRepository>
                 </v-card>
             </v-window-item>
 
             <v-window-item value="annotate">
-                <v-card class="ma-4 pa-4">
-                    <v-card-title>Annotate</v-card-title>
+                <v-card class="ma-4 pa-4 fill-height">
                     <AnnotateTables :database="vmConnInfo?.database" :schema="vmConnInfo?.schema"
                         :token="vmConnInfo?.token"></AnnotateTables>
                 </v-card>
@@ -78,3 +76,10 @@ async function disconnect() {
 }
 
 </script>
+<style module>
+.card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+</style>

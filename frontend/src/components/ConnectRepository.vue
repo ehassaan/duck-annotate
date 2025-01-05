@@ -35,7 +35,7 @@ import { onBeforeMount, ref, type PropType } from 'vue';
 import { MDConnection } from '@motherduck/wasm-client';
 import { cloneRepo } from '@/utils/gitUtil';
 import { getAllChunks, scanDirectory, type Chunk } from '@/utils/scanUtil';
-import { initializeEngine, search } from '@/utils/embeddingUtil';
+import * as embed from '@/utils/embeddingUtil';
 import * as storage from "@/utils/storageUtil";
 
 const vmMotherduck = ref({
@@ -56,6 +56,7 @@ const emit = defineEmits(["connect", "submit"]);
 const message = ref("");
 const tables = ref<string[]>([]);
 let connection: MDConnection | null = null;
+let engine: any = null;
 
 
 onBeforeMount(async () => {
@@ -134,21 +135,19 @@ async function scanRepo(dir: FileSystemDirectoryHandle) {
     message.value = `Analyzing ${files.length} files...`;
     const chunks = await getAllChunks(files, 500);
     console.log("Files: ", files, chunks);
-    await storage.setKey("chunks", chunks);
+    engine = embed.createEngine();
+    await embed.indexDocs(engine, chunks);
+    const serialized = embed.serializeEngine(engine)
+    await storage.setKey("engine", serialized);
 }
 
 
 async function testVectors() {
-    const chunks = await storage.getKey<Chunk[]>("chunks");
-    console.log("Loadded Chunks: ", chunks);
-    vectorize(chunks);
-}
-
-function vectorize(chunks: Chunk[]) {
-    const engine = initializeEngine(chunks);
-    const results = search(engine, "product");
-    console.log(results);
-    console.log(engine);
+    const config = await storage.getKey("engine");
+    engine = embed.deserializeEngine(config);
+    const results = embed.search(engine, "product");
+    console.log("Similar: ", results);
+    console.log("Docs: ", engine.getDocs());
 }
 
 // async function connect() {
