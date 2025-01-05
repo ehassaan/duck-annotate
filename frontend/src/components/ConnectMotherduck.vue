@@ -18,11 +18,11 @@
         <v-select density="compact" :class="$style.field" v-model="vmSchema" :items="schemas"
             @update:model-value="fetchTables" label="Select Schema to Annotate"></v-select>
 
-        <v-checkbox density="compact" :class="$style.field" label="Annotate all tables"
+        <!-- <v-checkbox density="compact" :class="$style.field" label="Annotate all tables"
             v-model="vmIsAllTables"></v-checkbox>
 
         <v-select density="compact" v-if="!vmIsAllTables" :class="$style.field" v-model="vmSelectedTables"
-            :loading="loadingTables" :items="tables" multiple label="Select Tables to Annotate"></v-select>
+            :loading="loadingTables" :items="tables" multiple label="Select Tables to Annotate"></v-select> -->
 
         <v-btn :class="$style.button" type="button" @click="submit" block color="primary">Save</v-btn>
 
