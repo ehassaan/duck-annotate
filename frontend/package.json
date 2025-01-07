@@ -10,7 +10,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix",
-    "postinstall": "copy node_modules\\web-tree-sitter\\tree-sitter.wasm public"
+    "postinstall": "cp node_modules/web-tree-sitter/tree-sitter.wasm public"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
