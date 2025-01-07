@@ -15,7 +15,7 @@ import DynamicFields from './DynamicFields.vue';
 import { sourceOptions } from "../utils/sourceOptions";
 
 const sourceTypes = Object.keys(sourceOptions);
-const sourceType = ref("postgres");
+const sourceType = ref<keyof typeof sourceOptions>("postgres");
 const connectionString = ref("postgres://postgres:postgres@localhost:5432/postgres");
 const connInfo = ref({});
 

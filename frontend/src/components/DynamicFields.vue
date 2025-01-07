@@ -30,6 +30,6 @@ const props = defineProps<{
   fields: Field[];
 }>();
 
-const formData = defineModel();
+const formData: any = defineModel();
 
 </script>

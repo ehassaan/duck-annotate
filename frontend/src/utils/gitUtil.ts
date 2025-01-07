@@ -42,7 +42,7 @@ export async function cloneRepo() {
 }
 
 export async function cloneRepo1() {
-    const directory = await window.showDirectoryPicker({
+    const directory = await (window as any).showDirectoryPicker({
         id: 'duck-annotate',
         mode: 'read',
         startIn: 'documents'

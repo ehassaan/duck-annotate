@@ -24,8 +24,8 @@ function tokenize(text: string) {
         .tokens()
         .filter((t) => (t.out(its.type) === 'word' && !t.out(its.stopWordFlag)))
         .each((t: ItemToken) => {
-            const token = (t.out(its.negationFlag)) ? '!' + t.out(its.stem) : t.out(its.stem);
-            const snakeCase = toSnakeCase(token);
+            const token = (t.out(its.negationFlag)) ? '!' + t.out(its.stem as any) : t.out(its.stem as any);
+            const snakeCase = toSnakeCase(token as any);
             if (!snakeCase) return;
             snakeCase.split('_').forEach((word) => tokens.push(word));
         });

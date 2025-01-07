@@ -8,19 +8,13 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AddDatasource: typeof import('./src/components/AddDatasource.vue')['default']
-    Annotate: typeof import('./src/components/Annotate.vue')['default']
     AnnotateTables: typeof import('./src/components/AnnotateTables.vue')['default']
     ConnectAirbyte: typeof import('./src/components/ConnectAirbyte.vue')['default']
-    ConnectAirByte: typeof import('./src/components/ConnectAirByte.vue')['default']
-    ConnectionForm: typeof import('./src/components/ConnectionForm.vue')['default']
     ConnectMotherduck: typeof import('./src/components/ConnectMotherduck.vue')['default']
     ConnectRepository: typeof import('./src/components/ConnectRepository.vue')['default']
-    copy: typeof import('./src/components/ImportWizard copy.vue')['default']
     DynamicFields: typeof import('./src/components/DynamicFields.vue')['default']
-    HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     ImportWizard: typeof import('./src/components/ImportWizard.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    ShowMetadata: typeof import('./src/components/ImportWizard.vue')['default']
   }
 }

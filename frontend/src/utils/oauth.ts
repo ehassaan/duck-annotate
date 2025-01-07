@@ -29,20 +29,10 @@ export async function createAuthClient(provider: string) {
 export async function getToken(auth0: Auth0Client) {
     try {
         return await auth0.getTokenSilently();
-    } catch (error) {
+    } catch (error: any) {
         if (error.error !== 'login_required') {
             throw error;
         }
     }
     return null;
-}
-
-export async function createSession(auth0: Auth0Client) {
-    try {
-        await auth0.getTokenSilently();
-    } catch (error) {
-        if (error.error !== 'login_required') {
-            throw error;
-        }
-    }
 }

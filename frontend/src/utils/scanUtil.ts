@@ -22,7 +22,7 @@ async function parseFile(file: File) {
     return pyParser.parse(code);
 }
 
-function getName(node): string | null {
+function getName(node: any): string | null {
     const nameNode = node.childForFieldName('name');
     return nameNode ? nameNode.text : null;
 }
@@ -31,7 +31,7 @@ export async function scanDirectory(dir: FileSystemDirectoryHandle, pattern: str
     const regex = new RegExp(pattern, 'i');
     const entries = [];
     for await (const fileHandle of getFilesRecursively('.', dir)) {
-        if (regex.test(fileHandle.relativePath)) {
+        if (regex.test((fileHandle as any).relativePath)) {
             entries.push(fileHandle);
         }
     }
@@ -43,11 +43,11 @@ async function* getFilesRecursively(path: string, entry: FileSystemDirectoryHand
     if (entry.kind === "file") {
         const file = await entry.getFile();
         if (file !== null) {
-            file.relativePath = path + "/" + file.name;
+            (file as any).relativePath = path + "/" + file.name;
             yield file;
         }
     } else if (entry.kind === "directory") {
-        for await (const handle of entry.values()) {
+        for await (const handle of (entry as any).values()) {
             yield* getFilesRecursively(path + "/" + handle.name, handle);
         }
     }
@@ -74,7 +74,7 @@ export async function getChunks(file: File, maxChunkSize: number = 1000) {
 
         if (node.type === 'function_definition' || node.type === 'class_definition' || node.type === 'decorated_definition') {
             chunks.push({
-                file: file.relativePath,
+                file: (file as any).relativePath,
                 type: 'group',
                 name: null,
                 comments: null,
@@ -83,7 +83,7 @@ export async function getChunks(file: File, maxChunkSize: number = 1000) {
             groups.length = 0;
             groupLength = 0;
             chunks.push({
-                file: file.relativePath,
+                file: (file as any).relativePath,
                 type: node.type,
                 name: getName(node),
                 comments: comment,
@@ -92,7 +92,7 @@ export async function getChunks(file: File, maxChunkSize: number = 1000) {
         } else {
             if (groupLength + node.text.length > maxChunkSize) {
                 chunks.push({
-                    file: file.relativePath,
+                    file: (file as any).relativePath,
                     type: 'group',
                     name: null,
                     comments: null,
