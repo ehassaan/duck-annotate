@@ -51,9 +51,7 @@ jobs:
         working-directory: ${{ env.BUILD_PATH }}
       - name: Build
         run: |
-          pnpm run build \
-            --site "${{ steps.pages.outputs.origin }}" \
-            --base "${{ steps.pages.outputs.base_path }}"
+          pnpm run build --base "${{ steps.pages.outputs.base_path }}"
         working-directory: ${{ env.BUILD_PATH }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
