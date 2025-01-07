@@ -1,16 +1,22 @@
 <template>
     <v-form :class="$style.form">
-        <v-select v-on:click="fetchSchemas" :loading="loadingSchemas" v-model="vmSchema" :items="vmAllSchemas"
-            label="Select Schema" @update:model-value="fetchRepos" :class="$style.field"
+        <v-select density="compact" v-on:click="fetchSchemas" :loading="loadingSchemas" v-model="vmSchema"
+            :items="vmAllSchemas" label="Select Schema" @update:model-value="fetchRepos" :class="$style.field"
             hint="Selected repository must already be synced to the selected schema using AirByte Github Connector"></v-select>
 
-        <v-select v-model="vmRepo" :items="vmAllRepos" :loading="loadingRepos" label="Select Repository"
-            :class="$style.field" hint="Select the repository used to infer the column and table metadata"></v-select>
+        <v-select density="compact" v-model="vmRepo" :items="vmAllRepos" :loading="loadingRepos"
+            label="Select Repository" :class="$style.field"
+            hint="Select the repository used to infer the column and table metadata"></v-select>
 
-        <v-select label="Authentication" :class="$style.field" :items="['Public', 'Github SSO']"></v-select>
+        <div :class="$style.provider_container">
+            <v-select label="Authentication" hide-details v-model="vmProvider" density="compact"
+                :class="[$style.field, $style.provider]" :items="['Public', 'Github', 'Local']"></v-select>
+            <v-btn v-if="vmProvider === 'Github'" prepend-icon="mdi-github" @click="onLoginGithub"
+                :class="$style.button">Login with
+                Github</v-btn>
+        </div>
 
         <v-btn :class="$style.button" color="primary" :loading="loadingClone" @click="clone" type="button">Scan</v-btn>
-
 
         <v-label :class="$style.field">{{ message }}</v-label>
 
@@ -37,6 +43,8 @@ import { cloneRepo } from '@/utils/gitUtil';
 import { getAllChunks, scanDirectory, type Chunk } from '@/utils/scanUtil';
 import * as embed from '@/utils/embeddingUtil';
 import * as storage from "@/utils/storageUtil";
+import * as oauth from "@/utils/oauth";
+import type { Auth0Client } from '@auth0/auth0-spa-js';
 
 const vmMotherduck = ref({
     tables: [],
@@ -51,12 +59,14 @@ const loadingSchemas = ref(false);
 const loadingRepos = ref(false);
 const loadingClone = ref(false);
 const vmRepo = ref("");
+const vmProvider = ref('Public');
 const vmSchema = ref<string>();
 const emit = defineEmits(["connect", "submit"]);
 const message = ref("");
-const tables = ref<string[]>([]);
 let connection: MDConnection | null = null;
 let engine: any = null;
+let providerGithub: Auth0Client | null = null;
+let githubToken: string | null = null;
 
 
 onBeforeMount(async () => {
@@ -64,6 +74,13 @@ onBeforeMount(async () => {
     if (!md) return;
 
     vmMotherduck.value = JSON.parse(md);
+    providerGithub = await oauth.createAuthClient("github");
+    try {
+        githubToken = await oauth.getToken(providerGithub);
+    }
+    catch (err) {
+        console.log("Failed to acquire Github token: ", err);
+    }
 });
 
 async function fetchSchemas() {
@@ -113,12 +130,27 @@ async function fetchRepos(schema: string) {
     }
 }
 
+async function onLoginGithub() {
+    if (!providerGithub) return;
+    let token = null;
+    try {
+        token = await oauth.getToken(providerGithub);
+    }
+    catch (err) {
+        console.log("Error getting token: ", token);
+    }
+    if (!token) {
+        console.log("Redirecting");
+        await providerGithub.loginWithRedirect();
+    }
+}
+
 async function clone() {
     loadingClone.value = true;
     try {
         message.value = "Cloning...";
         const dir = await cloneRepo();
-        await scanRepo(dir);
+        // await scanRepo(dir);
     }
     catch (err) {
         console.log("Error while cloning: ", err);
@@ -137,7 +169,7 @@ async function scanRepo(dir: FileSystemDirectoryHandle) {
     console.log("Files: ", files, chunks);
     engine = embed.createEngine();
     await embed.indexDocs(engine, chunks);
-    const serialized = embed.serializeEngine(engine)
+    const serialized = embed.serializeEngine(engine);
     await storage.setKey("engine", serialized);
 }
 
@@ -201,6 +233,18 @@ async function testVectors() {
 }
 
 .button {
-    align-self: flex-start;
+    max-width: 200px;
+}
+
+.provider_container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.provider {
+    max-width: 300px;
+    margin-right: 10px;
 }
 </style>
