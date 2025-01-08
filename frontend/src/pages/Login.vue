@@ -1,13 +1,13 @@
 <template>
     <div>
-        <button v-if="!session.data" @click="() => signinSocial('github')">
+        <v-btn prepend-icon="github" v-if="!session.data" @click="() => signinSocial('github')">
             Continue with github
-        </button>
+        </v-btn>
         <div>
             <pre>{{ session.data }}</pre>
-            <button v-if="session.data" @click="authClient.signOut()">
+            <v-btn prepend-icon="github" v-if="session.data" @click="authClient.signOut()">
                 Sign out
-            </button>
+            </v-btn>
         </div>
     </div>
 </template>

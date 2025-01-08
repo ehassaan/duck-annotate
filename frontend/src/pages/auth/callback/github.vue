@@ -1,17 +1,19 @@
 <template>
-    <div>Hello</div>
+    <div></div>
 </template>
 
 <script setup lang="ts">
 import { onBeforeMount, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
 
 onBeforeMount(async () => {
     console.log("Routing to home");
-    localStorage.setItem("githubToken", "sometoken");
-    await router.push({
+
+    const route = useRoute();
+    console.log("Params: ", route.query);
+    await router.replace({
         path: `/?token=sometoken&provider=github`,
     });
 });

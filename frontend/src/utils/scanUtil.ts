@@ -1,10 +1,23 @@
 import TreeSitter from 'web-tree-sitter';
 
+
 let pyParser: TreeSitter | null = null;
 
-TreeSitter.init().then(async () => {
+let base = import.meta.env.BASE_URL;
+if (!base.startsWith("/")) base = "/" + base;
+if (!base.endsWith("/")) base = base + "/";
+const baseUrl = `${window.location.protocol}//${window.location.host}${base}`;
+
+
+TreeSitter.init({
+    locateFile(scriptName: string, scriptDirectory: string) {
+        console.log("Locate file: ", scriptName, scriptDirectory, baseUrl);
+        return `${baseUrl}${scriptName}`;
+    },
+}).then(async () => {
     pyParser = new TreeSitter();
-    const JavaScript = await TreeSitter.Language.load('/tree-sitter-python.wasm');
+    const JavaScript = await TreeSitter.Language.load(`${baseUrl}tree-sitter-python.wasm`);
+
     pyParser.setLanguage(JavaScript);
 });
 
@@ -120,4 +133,4 @@ export async function getAllChunks(files: File[], maxChunkSize: number) {
         chunks.push(...await getChunks(file, maxChunkSize));
     }
     return chunks;
-}
+};;;;

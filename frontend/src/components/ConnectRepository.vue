@@ -12,8 +12,7 @@
             <v-select label="Authentication" hide-details v-model="vmProvider" density="compact"
                 :class="[$style.field, $style.provider]" :items="['Public', 'Github', 'Local']"></v-select>
             <v-btn v-if="vmProvider === 'Github'" prepend-icon="mdi-github" @click="onLoginGithub"
-                :class="$style.button">Login with
-                Github</v-btn>
+                :class="$style.button">{{ githubToken ? 'Disconnect Github' : 'Login with Github' }}</v-btn>
         </div>
 
         <v-btn :class="$style.button" color="primary" :loading="loadingClone" @click="clone" type="button">Scan</v-btn>
@@ -65,8 +64,7 @@ const emit = defineEmits(["connect", "submit"]);
 const message = ref("");
 let connection: MDConnection | null = null;
 let engine: any = null;
-let providerGithub: Auth0Client | null = null;
-let githubToken: string | null = null;
+let githubToken = ref<string>();
 
 
 onBeforeMount(async () => {
@@ -74,9 +72,8 @@ onBeforeMount(async () => {
     if (!md) return;
 
     vmMotherduck.value = JSON.parse(md);
-    providerGithub = await oauth.createAuthClient("github");
     try {
-        githubToken = await oauth.getToken(providerGithub);
+        githubToken.value = oauth.getToken();
     }
     catch (err) {
         console.log("Failed to acquire Github token: ", err);
@@ -131,17 +128,24 @@ async function fetchRepos(schema: string) {
 }
 
 async function onLoginGithub() {
-    if (!providerGithub) return;
+    console.log("On login github");
+    if (githubToken.value) {
+        await oauth.logout("github");
+    }
     let token = null;
     try {
-        token = await oauth.getToken(providerGithub);
+        token = await oauth.getToken("github");
+        if (token) {
+            console.log("Github token Retrieved");
+            githubToken.value = token;
+        }
+        else {
+            console.log("Redirecting");
+            await oauth.requestLogin("github");
+        }
     }
     catch (err) {
         console.log("Error getting token: ", token);
-    }
-    if (!token) {
-        console.log("Redirecting");
-        await providerGithub.loginWithRedirect();
     }
 }
 
