@@ -1,0 +1,25 @@
+{
+  "name": "elysia",
+  "version": "1.0.50",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "@better-fetch/fetch": "^1.1.12",
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/swagger": "^1.2.0",
+    "@types/pg": "^8.11.10",
+    "better-auth": "^1.1.4",
+    "elysia": "latest",
+    "isomorphic-git": "^1.29.0",
+    "jwt-decode": "^4.0.0",
+    "pg": "^8.13.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.1.4",
+    "bun-types": "latest"
+  },
+  "module": "src/index.js"
+}
