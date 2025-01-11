@@ -2,7 +2,6 @@
 declare module "bun" {
     interface Env {
         readonly BETTER_AUTH_SECRET: string;
-        readonly BETTER_AUTH_URL: string;
         readonly PORT: string;
         readonly DATABASE_URL: string;
         readonly GITHUB_CLIENT_ID: string;
