@@ -35,7 +35,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  packages: write
+  contents: write
 
 jobs:
   build:
@@ -50,18 +51,15 @@ jobs:
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Lowercase the repo name and username
-        run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
 
       - name: Build and push container image to registry
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           push: true
-          tags: ghcr.io/${{ env.REPO }}:${{ github.sha }}
-          context: ./backend/
+          tags: 'ghcr.io/${{ github.repository }}:${{ github.sha }}'
+          context: "{{defaultContext}}:backend"
 
   deploy:
     permissions:
@@ -73,13 +71,10 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
-      - name: Lowercase the repo name and username
-        run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
-
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: 'ghcr.io/${{ env.REPO }}:${{ github.sha }}'
+          images: 'ghcr.io/${{ github.repository }}:${{ github.sha }}'
