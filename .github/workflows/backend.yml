@@ -35,7 +35,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  metadata: read/write
+  packages: read/write
+  contents: read/write
 
 jobs:
   build:
