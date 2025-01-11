@@ -6,6 +6,8 @@ import airbyteController from './controllers/airbyteController';
 // import { checkAuth, session } from './middlewars/auth_middleware';
 import gitController from './controllers/gitController';
 import connectionsController from './controllers/connectionsController';
+import { frontend_base_url } from './libs/constants';
+
 
 let app = new Elysia()
   .onError(({ request, path, error }) => {
@@ -13,7 +15,7 @@ let app = new Elysia()
   })
   .onBeforeHandle(({ path, request: { method } }) => console.log(`${method} ${path}`))
   .use(cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: [`${frontend_base_url?.protocol}//${frontend_base_url?.host}`],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   }))
   .group("/api", app => app
@@ -22,7 +24,6 @@ let app = new Elysia()
     .use(airbyteController)
     .use(gitController))
   .use(swagger({ path: "/swagger" }));
-
 
 app.listen(process.env.PORT ?? 5000);
 

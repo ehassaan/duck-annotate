@@ -2,12 +2,12 @@ import { betterAuth, User } from "better-auth";
 import { openAPI } from "better-auth/plugins";
 import { db } from '../services/db';
 import { createWorkspace } from "../services/airbyte";
+import { frontend_base_url } from './constants';
 
-const fe_base_url = URL.parse(process.env.FRONTEND_BASE_URL);
 
 export const auth = betterAuth({
     database: db,
-    trustedOrigins: fe_base_url ? [`${fe_base_url.protocol}//${fe_base_url.host}`] : [],
+    trustedOrigins: frontend_base_url ? [`${frontend_base_url.protocol}//${frontend_base_url.host}`] : [],
     emailAndPassword: {
         enabled: true
     },
@@ -23,7 +23,7 @@ export const auth = betterAuth({
         github: {
             clientId: process.env.GITHUB_CLIENT_ID || "",
             clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-            redirectURI: fe_base_url?.href + "/auth/callback/github"
+            redirectURI: frontend_base_url?.href + "/auth/callback/github"
         }
     },
     advanced: {
