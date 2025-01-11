@@ -1,5 +1,7 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1-alpine AS base
 WORKDIR /usr/app
+
+RUN apk add g++ make py3-pip
 
 COPY . /usr/app
 RUN bun install --frozen-lockfile --production
