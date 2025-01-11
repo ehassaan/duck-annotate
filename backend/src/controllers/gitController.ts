@@ -27,9 +27,9 @@ export default new Elysia({ prefix: '/git' })
         }
         try {
             // const res = await git.clone({ fs: fs, http: gitHttp, dir, url: 'https://github.com/isomorphic-git/lightning-fs' });
-            const res = await cloneRepo(path.dirname(dir), git_url, body.branch);
+            await cloneRepo(path.dirname(dir), git_url, body.branch);
             console.log("Cloned Successfully");
-            const result = await scanRepo("python", "**/*.py", 1500);
+            const result = await scanRepo(dir, "python", "**/*.py", 1500);
             return {
                 message: "Success",
                 data: result

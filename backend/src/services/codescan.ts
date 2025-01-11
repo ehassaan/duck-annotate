@@ -85,7 +85,11 @@ async function getChunks(filePath: string, maxChunkSize: number = 1500) {
 
 export type ScanLanguage = "python";
 
-export async function scanRepo(language: ScanLanguage, regexPattern: string, maxChunkSize: number) {
+export async function scanRepo(working_dir: string,
+    language: ScanLanguage,
+    regexPattern: string,
+    maxChunkSize: number) {
+
     if (language === "python") {
         pyParser.setLanguage(Python);
     }
@@ -93,7 +97,7 @@ export async function scanRepo(language: ScanLanguage, regexPattern: string, max
         throw Error("Language not supported");
     }
     const chunks: Chunk[] = [];
-    const files = glob.sync(regexPattern, { nodir: true });
+    const files = glob.sync(regexPattern, { nodir: true, cwd: working_dir });
     for (const filePath of files) {
         console.log("File: ", filePath);
         const _chunks = await getChunks(filePath, maxChunkSize);

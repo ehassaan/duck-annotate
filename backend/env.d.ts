@@ -9,5 +9,6 @@ declare module "bun" {
         readonly GITHUB_CLIENT_SECRET: string;
         readonly AIRBYTE_CLIENT_ID: string;
         readonly AIRBYTE_CLIENT_SECRET: string;
+        readonly FRONTEND_BASE_URL: string;
     }
 }

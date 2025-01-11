@@ -8,6 +8,10 @@ import gitController from './controllers/gitController';
 import connectionsController from './controllers/connectionsController';
 
 let app = new Elysia()
+  .onError(({ request, path, error }) => {
+    console.error(`${request.method} ${path}`, error);
+  })
+  .onBeforeHandle(({ path, request: { method } }) => console.log(`${method} ${path}`))
   .use(cors({
     origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
