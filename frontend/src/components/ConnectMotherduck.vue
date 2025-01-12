@@ -6,7 +6,7 @@
         <v-btn v-if="destinationId" :class="$style.button" type="button" @click="disconnect" block
             color="primary">Disconnect</v-btn>
 
-        <v-text-field type="password" density="compact" :class="$style.field" v-if="!destinationId" required
+        <v-text-field type="password" density="compact" :class="$style.field" v-if="!destinationId && !loading" required
             v-model="vmToken" label="Token"></v-text-field>
 
         <v-btn v-if="!destinationId" :loading="loading" :class="$style.button" type="button" @click="connect" block
@@ -16,7 +16,7 @@
             @update:model-value="fetchSchemas" label="Select Database"></v-select>
 
         <v-select density="compact" :class="$style.field" v-model="vmSchema" :items="schemas"
-            @update:model-value="fetchTables" label="Select Schema to Annotate"></v-select>
+            label="Select Schema to Annotate"></v-select>
 
         <!-- <v-checkbox density="compact" :class="$style.field" label="Annotate all tables"
             v-model="vmIsAllTables"></v-checkbox>
@@ -63,10 +63,10 @@ const message = ref("");
 const loading = ref(false);
 const databases = ref<string[]>([]);
 const schemas = ref<string[]>([]);
-const tables = ref<string[]>([]);
-const loadingTables = ref(false);
-const vmIsAllTables = ref(true);
-const vmSelectedTables = ref<string[]>([]);
+// const tables = ref<string[]>([]);
+// const loadingTables = ref(false);
+// const vmIsAllTables = ref(true);
+// const vmSelectedTables = ref<string[]>([]);
 let destinationId = ref<string>();
 
 onMounted(async () => {
@@ -75,12 +75,12 @@ onMounted(async () => {
         if (conStr) {
             const connInfo = JSON.parse(conStr);
             vmToken.value = connInfo.token;
-            await connect(connInfo);
-            await fetchSchemas();
-            await fetchTables(connInfo.schema);
             vmDatabase.value = connInfo.database;
             vmSchema.value = connInfo.schema;
             destinationId.value = connInfo.destinationId;
+            await connect(connInfo);
+            await fetchSchemas();
+            // await fetchTables(connInfo.schema);
         }
     }
     catch (err) {
@@ -125,7 +125,7 @@ async function fetchSchemas() {
     loading.value = true;
     try {
         const schemaRes = await md.fetchSchemas(vmDatabase.value);
-        console.log('query result', schemaRes);
+        console.log('schemas result', schemaRes, vmDatabase.value);
         schemas.value = schemaRes;
     } catch (err) {
         console.log('query failed', err);
@@ -136,29 +136,29 @@ async function fetchSchemas() {
     loading.value = false;
 }
 
-async function fetchTables(schema: string) {
-    console.log("Fetching tables: ", schema);
-    if (!md.db) {
-        return;
-    }
-    loadingTables.value = true;
-    const tableRes = await md.fetchTables(vmDatabase.value, schema);
-    console.log('query result', tableRes);
-    tables.value = tableRes;
-    loadingTables.value = false;
-}
+// async function fetchTables(schema: string) {
+//     console.log("Fetching tables: ", schema);
+//     if (!md.db) {
+//         return;
+//     }
+//     loadingTables.value = true;
+//     const tableRes = await md.fetchTables(vmDatabase.value, schema);
+//     console.log('query result', tableRes);
+//     tables.value = tableRes;
+//     loadingTables.value = false;
+// }
 
 async function submit() {
-    let tableList: string[];
-    if (vmIsAllTables.value) {
-        tableList = { ...tables.value };
-    }
-    else {
-        tableList = { ...vmSelectedTables.value };
-    }
+    // let tableList: string[];
+    // if (vmIsAllTables.value) {
+    //     tableList = { ...tables.value };
+    // }
+    // else {
+    //     tableList = { ...vmSelectedTables.value };
+    // }
     const connValues = {
         database: vmDatabase.value, token: vmToken.value, schema: vmSchema.value,
-        tables: tableList
+        // tables: tableList
     };
     if (destinationId.value) {
         const vals = { ...connValues, destinationId: destinationId.value };

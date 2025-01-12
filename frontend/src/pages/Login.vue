@@ -126,7 +126,7 @@ async function login(ev: SubmitEventPromise) {
             // callbackURL: import.meta.env.VITE_BASE_URL
         });
         if (res.error) throw Error(res.error.message);
-        router.replace("/");
+        await router.replace("/");
     }
     catch (err) {
         console.log("Error logging in: ", err);
@@ -136,7 +136,6 @@ async function login(ev: SubmitEventPromise) {
     finally {
         isLoading.value = false;
     }
-
 }
 
 async function signup(ev: SubmitEventPromise) {
@@ -199,7 +198,7 @@ async function loginSocial(provider: string) {
 
 .btn_login {
     margin: 0 0 20px 0;
-    max-width: 250px;
+    /* max-width: 250px; */
 }
 
 .input_field {}
