@@ -6,6 +6,12 @@ import _ from "lodash";
 
 export let db: MDConnection | null = null;
 
+export let connInfo: any = {};
+
+export function setCreds(creds: any) {
+    connInfo = creds;
+}
+
 export async function connect(token: string) {
     const connection = MDConnection.create({
         mdToken: token,
@@ -14,6 +20,7 @@ export async function connect(token: string) {
         throw new Error('Failed to initialize connection');
     }
     db = connection;
+    connInfo = connInfo;
 }
 
 export async function disconnect() {

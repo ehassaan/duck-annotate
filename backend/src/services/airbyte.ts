@@ -25,6 +25,12 @@ export const airbyteRoutes = [
         workspaceParam: "workspaceIds",
     },
     {
+        type: "LIST",
+        route: "/v1/jobs",
+        workspaceParam: "workspaceIds",
+        checkResponseWs: false
+    },
+    {
         type: "CREATE",
         route: "/v1/destinations",
         workspaceParam: "workspaceId",
@@ -37,6 +43,11 @@ export const airbyteRoutes = [
     {
         type: "CREATE",
         route: "/v1/sources",
+        workspaceParam: "workspaceId",
+    },
+    {
+        type: "CREATE",
+        route: "/v1/jobs",
         workspaceParam: "workspaceId",
     },
     {
@@ -54,7 +65,22 @@ export const airbyteRoutes = [
         route: "/v1/sources/:id",
         verifyResponseWs: true
     },
-];
+    {
+        type: "DELETE",
+        route: "/v1/destinations/:id",
+        workspaceParam: "workspaceId",
+    },
+    {
+        type: "DELETE",
+        route: "/v1/connections/:id",
+        workspaceParam: "workspaceId",
+    },
+    {
+        type: "DELETE",
+        route: "/v1/sources/:id",
+        workspaceParam: "workspaceId",
+    },
+] as AirbyteRequestOptions[];
 
 
 export async function getOrFetchAirbyteToken() {
@@ -96,6 +122,7 @@ export interface AirbyteRequestOptions {
     query?: any;
     body?: any;
     workspaceId: string;
+    checkResponseWs?: boolean;
 }
 
 export async function airbyteGet(args: Omit<AirbyteRequestOptions, "body" | "method">) {
@@ -111,13 +138,29 @@ export async function airbyteGet(args: Omit<AirbyteRequestOptions, "body" | "met
     };
 }
 
+export async function airbyteDelete(args: Omit<AirbyteRequestOptions, "body" | "method">) {
+    const query = { ...args.query, workspaceIds: args.workspaceId };
+    const path = args.path.replace("/api/airbyte", "");
+    const res = await airbyteRequest({ method: "GET", path, query });
+
+    if (!res.error && res.data && res.data.workspaceId === args.workspaceId) {
+        const res = await airbyteRequest({ method: "DELETE", path, query });
+        return res;
+    }
+    else return {
+        error: res.error ?? { status: 400, message: "No resource found for the attached workspace" }
+    };
+}
+
 export async function airbyteList(args: Omit<AirbyteRequestOptions, "body" | "method">) {
     const query = { ...args.query, workspaceIds: args.workspaceId };
     const path = args.path.replace("/api/airbyte", "");
     const res = await airbyteRequest({ method: "GET", path, query });
     if (!res.error
         && res.data
-        && !res.data.data?.find((d: any) => d.workspaceId !== args.workspaceId)
+        && (
+            !args.checkResponseWs || !res.data.data?.find((d: any) => d.workspaceId !== args.workspaceId)
+        )
     ) {
         return res;
     }

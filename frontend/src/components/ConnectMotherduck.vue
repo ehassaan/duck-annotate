@@ -3,13 +3,13 @@
 
         <v-label :class="$style.field">{{ message }}</v-label>
 
-        <v-btn v-if="props.token" :class="$style.button" type="button" @click="disconnect" block
+        <v-btn v-if="destinationId" :class="$style.button" type="button" @click="disconnect" block
             color="primary">Disconnect</v-btn>
 
-        <v-text-field density="compact" :class="$style.field" v-if="!props.token" required v-model="vmToken"
-            label="Token"></v-text-field>
+        <v-text-field type="password" density="compact" :class="$style.field" v-if="!destinationId" required
+            v-model="vmToken" label="Token"></v-text-field>
 
-        <v-btn v-if="!props.token" :loading="loading" :class="$style.button" type="button" @click="connect" block
+        <v-btn v-if="!destinationId" :loading="loading" :class="$style.button" type="button" @click="connect" block
             color="primary">Connect</v-btn>
 
         <v-select density="compact" v-model="vmDatabase" :class="$style.field" :items="databases"
@@ -24,7 +24,8 @@
         <v-select density="compact" v-if="!vmIsAllTables" :class="$style.field" v-model="vmSelectedTables"
             :loading="loadingTables" :items="tables" multiple label="Select Tables to Annotate"></v-select> -->
 
-        <v-btn :class="$style.button" type="button" @click="submit" block color="primary">Save</v-btn>
+        <v-btn :class="$style.button" :loading="loading" type="button" @click="submit" block
+            color="primary">Save</v-btn>
 
     </v-form>
 
@@ -34,25 +35,30 @@
 
 import { onMounted, ref } from 'vue';
 import * as md from "@/utils/mdUtil";
+import { $fetch } from '@/services/api';
 
-const props = defineProps({
-    token: {
-        type: String,
-        required: false
-    },
-    database: {
-        type: String,
-        default: "main"
-    },
-    schema: {
-        type: String,
-        default: "main"
-    }
-});
+// const props = defineProps({
+//     token: {
+//         type: String,
+//         required: false
+//     },
+//     database: {
+//         type: String,
+//         default: "main"
+//     },
+//     schema: {
+//         type: String,
+//         default: "main"
+//     },
+//     destinationId: {
+//         type: String,
+//         required: ""
+//     }
+// });
 const emit = defineEmits(["connect", "submit", "disconnect"]);
-const vmToken = ref(props.token ?? "");
+const vmToken = ref("");
 const vmSchema = ref<string>();
-const vmDatabase = ref(props.database);
+const vmDatabase = ref("");
 const message = ref("");
 const loading = ref(false);
 const databases = ref<string[]>([]);
@@ -61,16 +67,25 @@ const tables = ref<string[]>([]);
 const loadingTables = ref(false);
 const vmIsAllTables = ref(true);
 const vmSelectedTables = ref<string[]>([]);
+let destinationId = ref<string>();
 
 onMounted(async () => {
-    if (!vmToken.value) {
-        return;
+    try {
+        const conStr = localStorage.getItem("motherduck");
+        if (conStr) {
+            const connInfo = JSON.parse(conStr);
+            vmToken.value = connInfo.token;
+            await connect(connInfo);
+            await fetchSchemas();
+            await fetchTables(connInfo.schema);
+            vmDatabase.value = connInfo.database;
+            vmSchema.value = connInfo.schema;
+            destinationId.value = connInfo.destinationId;
+        }
     }
-    await connect();
-    await fetchSchemas();
-    await fetchTables(props.schema);
-    vmDatabase.value = props.database;
-    vmSchema.value = props.schema;
+    catch (err) {
+        console.log("Failed to connect to motherduck: ", err);
+    }
 });
 
 async function disconnect() {
@@ -79,7 +94,7 @@ async function disconnect() {
     emit('disconnect');
 }
 
-async function connect() {
+async function connect(connInfo: any) {
     if (!vmToken.value) {
         message.value = "Error: Token is null";
         return;
@@ -91,6 +106,7 @@ async function connect() {
         await md.connect(vmToken.value);
         const dbRes = await md.fetchDatabases();
         message.value = `Connection Successful. ${dbRes.length} databases found.`;
+        md.setCreds(connInfo);
         databases.value = dbRes;
     } catch (err) {
         console.log('query failed', err);
@@ -144,8 +160,38 @@ async function submit() {
         database: vmDatabase.value, token: vmToken.value, schema: vmSchema.value,
         tables: tableList
     };
-    console.log("Submitting: ", connValues);
-    emit("submit", connValues);
+    if (destinationId.value) {
+        const vals = { ...connValues, destinationId: destinationId.value };
+        console.log("Submitting: ", vals);
+        emit("submit", vals);
+        return;
+    }
+    loading.value = true;
+    const res = await $fetch('/api/airbyte/v1/destinations',
+        {
+            method: 'POST',
+            credentials: 'include',
+            body: {
+                "name": `${connValues.database}/${connValues.schema}`,
+                "configuration": {
+                    "destinationType": "duckdb",
+                    "schema": connValues.schema,
+                    "motherduck_api_key": connValues.token,
+                    "destination_path": `md:${connValues.database}`
+                }
+            }
+        });
+    loading.value = false;
+    console.log("Airbyte Response: ", res);
+    if (res.error) {
+        message.value = 'Failed to create Airbyte destination: ' + res.error.message;
+        loading.value = false;
+        return;
+    }
+    const vals = { ...connValues, destinationId: (res.data as any).data.destinationId };
+    destinationId.value = vals.destinationId;
+    console.log("Submitting: ", vals);
+    emit("submit", vals);
 }
 
 </script>

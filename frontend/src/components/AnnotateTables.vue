@@ -1,7 +1,7 @@
 <template>
     <div :class="$style.container">
 
-        <v-snackbar v-model="isMessage" :timeout="3000" :text="message"></v-snackbar>
+        <v-snackbar v-model="isMessage" :timeout="4000" :text="message"></v-snackbar>
 
         <div :class="$style.table_selection">
             <v-select hide-details="auto" :class="$style.table_dropdown" :loading="isLoadingTblSelect" density="compact"

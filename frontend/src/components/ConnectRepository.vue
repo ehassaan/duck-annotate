@@ -73,7 +73,7 @@ onBeforeMount(async () => {
 
     vmMotherduck.value = JSON.parse(md);
     try {
-        githubToken.value = oauth.getToken();
+        githubToken.value = await oauth.getToken("github") ?? undefined;
     }
     catch (err) {
         console.log("Failed to acquire Github token: ", err);

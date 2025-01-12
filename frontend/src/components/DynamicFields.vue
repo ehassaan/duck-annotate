@@ -16,18 +16,11 @@
 </template>
 
 <script setup lang="ts">
+import type { DynamicField } from '@/entities/DynamicField';
 
-interface Field {
-  name: string;
-  label: string;
-  type: string;
-  required?: boolean;
-  rules?: ((v: any) => boolean | string)[];
-  options?: { text: string; value: string; }[];
-}
 
 const props = defineProps<{
-  fields: Field[];
+  fields: DynamicField[];
 }>();
 
 const formData: any = defineModel();
