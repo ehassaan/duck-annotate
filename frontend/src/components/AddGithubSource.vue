@@ -14,7 +14,7 @@
 <script setup lang="ts">
 
 import { onMounted, ref } from 'vue';
-import * as md from "@/utils/mdUtil";
+import * as md from "@/services/motherduck";
 import DynamicFields from './DynamicFields.vue';
 import type { DynamicField } from "@/entities/DynamicField";
 import type { SubmitEventPromise } from 'vuetify';

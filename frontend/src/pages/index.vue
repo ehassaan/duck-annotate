@@ -1,13 +1,13 @@
 <template>
   <DefaultLayout :items="navItems">
-    <ImportWizard v-if="!isLoading"></ImportWizard>
+    <WorkspaceView v-if="!isLoading"></WorkspaceView>
   </DefaultLayout>
 </template>
 
 <script lang="ts" setup>
-import ImportWizard from '@/components/ImportWizard.vue';
+import WorkspaceView from '@/components/WorkspaceView.vue';
 import DefaultLayout from '@/layout/DefaultLayout.vue';
-import { authClient } from '@/utils/auth';
+import { authClient } from '@/services/auth';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 

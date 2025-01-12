@@ -32,7 +32,7 @@
 import { onMounted, ref } from 'vue';
 import { $fetch } from '@/services/api';
 import AddPostgresSource from './AddPostgresSource.vue';
-import * as md from "@/utils/mdUtil";
+import * as md from "@/services/motherduck";
 
 const message = ref("");
 const showMessage = ref(false);

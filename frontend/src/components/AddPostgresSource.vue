@@ -14,7 +14,6 @@
 <script setup lang="ts">
 
 import { mergeProps, onMounted, ref } from 'vue';
-import * as md from "@/utils/mdUtil";
 import DynamicFields from './DynamicFields.vue';
 import type { DynamicField } from "@/entities/DynamicField";
 import type { SubmitEventPromise } from 'vuetify';
@@ -113,10 +112,6 @@ const optsPostgres: DynamicField[] = [
 onMounted(async () => {
 
 });
-
-async function disconnect() {
-    await md.disconnect();
-}
 
 
 async function submit(ev: SubmitEventPromise) {

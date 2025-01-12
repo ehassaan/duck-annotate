@@ -34,7 +34,7 @@
 <script setup lang="ts">
 
 import { onMounted, ref } from 'vue';
-import * as md from "@/utils/mdUtil";
+import * as md from "@/services/motherduck";
 import { $fetch } from '@/services/api';
 
 // const props = defineProps({
