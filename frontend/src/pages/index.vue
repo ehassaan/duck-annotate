@@ -17,11 +17,6 @@ const navItems = ref([
     icon: 'mdi-home',
     link: '/'
   },
-  {
-    label: 'About',
-    icon: 'mdi-account',
-    link: '/about'
-  }
 ]);
 
 const router = useRouter();

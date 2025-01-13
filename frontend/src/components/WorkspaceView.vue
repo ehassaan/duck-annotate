@@ -39,7 +39,7 @@
 
             <v-window-item value="information">
                 <v-card :class="$style.window_card" color="secondary" :elevation="10">
-                    <v-card-title>Select Repository</v-card-title>
+                    <v-card-title>Add Information Sources</v-card-title>
                     <ConnectRepository @submit="saveCreds"></ConnectRepository>
                 </v-card>
             </v-window-item>

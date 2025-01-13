@@ -6,16 +6,16 @@
         <v-btn v-if="destinationId" :class="$style.button" type="button" @click="disconnect" block
             color="primary">Disconnect</v-btn>
 
-        <v-text-field type="password" density="compact" :class="$style.field" v-if="!destinationId && !loading" required
+        <v-text-field type="password" density="default" :class="$style.field" v-if="!destinationId && !loading" required
             v-model="vmToken" label="Token"></v-text-field>
 
         <v-btn v-if="!destinationId" :loading="loading" :class="$style.button" type="button" @click="connect" block
             color="primary">Connect</v-btn>
 
-        <v-select density="compact" v-model="vmDatabase" :class="$style.field" :items="databases"
+        <v-select density="default" v-model="vmDatabase" :class="$style.field" :items="databases"
             @update:model-value="fetchSchemas" label="Select Database"></v-select>
 
-        <v-select density="compact" :class="$style.field" v-model="vmSchema" :items="schemas"
+        <v-select density="default" :class="$style.field" v-model="vmSchema" :items="schemas"
             label="Select Schema to Annotate"></v-select>
 
         <!-- <v-checkbox density="compact" :class="$style.field" label="Annotate all tables"

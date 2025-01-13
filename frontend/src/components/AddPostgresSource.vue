@@ -5,7 +5,13 @@
         </v-snackbar>
         <DynamicFields :fields="optsPostgres" v-model="vmPostgres"></DynamicFields>
 
-        <v-btn :class="$style.button" type="submit" :loading="loading" block color="primary">Create</v-btn>
+        <div>
+            <v-btn :disabled="!destinationId" :class="$style.button" type="submit" :loading="loading"
+                color="primary">Create</v-btn>
+            <v-btn :class="$style.button" type="button" @click="() => emit('cancel')" color="secondary">Cancel</v-btn>
+        </div>
+
+        <label v-if="!destinationId">Please connect Motherduck first {{ destinationId }}</label>
 
     </v-form>
 
@@ -13,15 +19,17 @@
 
 <script setup lang="ts">
 
-import { mergeProps, onMounted, ref } from 'vue';
+import { computed, mergeProps, onMounted, ref } from 'vue';
 import DynamicFields from './DynamicFields.vue';
 import type { DynamicField } from "@/entities/DynamicField";
 import type { SubmitEventPromise } from 'vuetify';
 import { $fetch } from '@/services/api';
+import * as md from "@/services/motherduck";
 
 const message = ref("");
 const showMessage = ref(false);
 const loading = ref(false);
+const destinationId = computed(() => md.connInfo.destinationId);
 
 const vmPostgres = ref({
     name: "MyDataSource",
@@ -34,13 +42,8 @@ const vmPostgres = ref({
     method: "Xmin"
 });
 
-const emit = defineEmits(["created"]);
 
-const props = defineProps({
-    destination: {
-        type: Object,
-    }
-});
+const emit = defineEmits(["created", "cancel"]);
 
 
 const optsPostgres: DynamicField[] = [

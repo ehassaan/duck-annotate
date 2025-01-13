@@ -1,7 +1,7 @@
 <template>
 
-    <VProgressCircular indeterminate v-if="loading"></VProgressCircular>
-    <v-list item-props :items="connections">
+    <VProgressCircular :class="$style.loading" indeterminate v-if="loading"></VProgressCircular>
+    <v-list item-props :items="connections" v-if="connections.length>0">
         <template v-slot:item="item">
             <v-list-item v-bind=item.props>
                 <template v-slot:append>
@@ -10,7 +10,7 @@
                             item.props.isSyncing ? 'Syncing...' : 'Sync Now' }}</v-btn>
 
                         <v-btn :loading="loadingConn" @click="() => createConnection(item.props)"
-                            v-if="!item.props.connId">Enable Replication</v-btn>
+                            v-if="!item.props.connId">Create Connection</v-btn>
                         <v-btn color="danger" icon="mdi-trash-can-outline" variant="text"
                             @click="() => deleteSource(item.props)"></v-btn>
                     </div>
@@ -20,10 +20,9 @@
         </template>
     </v-list>
 
-    <v-btn :class="$style.button" color="primary" @click="() => creatingPg = !creatingPg">{{ creatingPg ? 'Cancel' :
-        'Add New' }}</v-btn>
+    <v-btn v-if="!creatingPg" :class="$style.button" color="primary" @click="() => creatingPg = true">Add New</v-btn>
 
-    <AddPostgresSource @created="onCreateNew" v-if="creatingPg"></AddPostgresSource>
+    <AddPostgresSource @created="onCreateNew" @cancel="() => creatingPg = false" v-if="creatingPg"></AddPostgresSource>
 
 </template>
 
@@ -109,7 +108,7 @@ async function deleteSource(item: any) {
 }
 
 async function checkSyncStatus(conn: any, interval: any) {
-    const res = await $fetch('/api/airbyte/v1/jobs', {
+    const res = await $fetch('/api/airbyte/v1/jobs?limit=100&orderBy=createdAt|DESC', {
         method: 'GET',
         credentials: 'include',
         query: {
@@ -193,6 +192,12 @@ async function createConnection(source: any) {
 
 .field {
     margin-top: 12px;
+}
+
+.loading {
+    margin: 5px auto 10px auto;
+    align-self: center;
+    display: block;
 }
 
 .sourceActions {

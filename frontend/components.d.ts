@@ -14,7 +14,6 @@ declare module 'vue' {
     ConnectMotherduck: typeof import('./src/components/ConnectMotherduck.vue')['default']
     ConnectRepository: typeof import('./src/components/ConnectRepository.vue')['default']
     DynamicFields: typeof import('./src/components/DynamicFields.vue')['default']
-    ImportWizard: typeof import('./src/components/ImportWizard.vue')['default']
     Logo: typeof import('./src/components/Logo.vue')['default']
     ManageInfoSources: typeof import('./src/components/ManageInfoSources.vue')['default']
     ManageSources: typeof import('./src/components/ManageSources.vue')['default']

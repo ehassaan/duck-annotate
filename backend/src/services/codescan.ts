@@ -1,6 +1,7 @@
 import Python from 'tree-sitter-python';
 import TreeSitter from 'tree-sitter';
 import * as glob from 'glob';
+import path from 'node:path';
 
 const pyParser = new TreeSitter();
 
@@ -91,7 +92,7 @@ export async function scanRepo(working_dir: string,
     maxChunkSize: number) {
 
     if (language === "python") {
-        pyParser.setLanguage(Python);
+        pyParser.setLanguage(Python as any);
     }
     else {
         throw Error("Language not supported");
@@ -100,7 +101,7 @@ export async function scanRepo(working_dir: string,
     const files = glob.sync(regexPattern, { nodir: true, cwd: working_dir });
     for (const filePath of files) {
         console.log("File: ", filePath);
-        const _chunks = await getChunks(filePath, maxChunkSize);
+        const _chunks = await getChunks(path.join(working_dir, filePath), maxChunkSize);
         chunks.push(..._chunks);
     }
     console.log(`Total Files Scanned: ${files.length}\tTotal Chunks: ${chunks.length}`);
@@ -108,6 +109,6 @@ export async function scanRepo(working_dir: string,
         chunks: chunks,
         filesScanned: files.length,
         totalChunks: chunks.length,
-        languagesFound: ["python"]
+        languagesScanned: ["python"]
     };
 }

@@ -9,5 +9,6 @@ declare module "bun" {
         readonly AIRBYTE_CLIENT_ID: string;
         readonly AIRBYTE_CLIENT_SECRET: string;
         readonly FRONTEND_BASE_URL: string;
+        readonly BACKEND_BASE_URL: string;
     }
 }

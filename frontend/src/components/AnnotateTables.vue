@@ -59,7 +59,6 @@ import { onBeforeMount, onMounted, ref, type PropType } from 'vue';
 import * as embed from '@/utils/embeddingUtil';
 import * as storage from "@/utils/storageUtil";
 import * as md from "@/services/motherduck";
-import type { Chunk } from '@/utils/scanUtil';
 import * as llm from "@/utils/llmUtil";
 import _ from 'lodash';
 

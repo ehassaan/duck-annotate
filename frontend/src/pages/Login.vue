@@ -43,7 +43,8 @@
                             <p :class="$style.separator">or sign in with</p>
 
                             <div :class="$style.social_buttons">
-                                <v-btn prepend-icon="mdi-github" @click="() => loginSocial('github')">
+                                <v-btn :loading="isLoadingSocial" prepend-icon="mdi-github"
+                                    @click="() => loginSocial('github')">
                                     Continue with github
                                 </v-btn>
                             </div>
@@ -65,7 +66,8 @@
                             <p :class="$style.separator">or sign in with</p>
 
                             <div :class="$style.social_buttons">
-                                <v-btn prepend-icon="mdi-github" type="submit" @click="() => loginSocial('github')">
+                                <v-btn :loading="isLoadingSocial" prepend-icon="mdi-github" type="submit"
+                                    @click="() => loginSocial('github')">
                                     Continue with github
                                 </v-btn>
                             </div>
@@ -94,6 +96,7 @@ const password = ref("");
 const message = ref("");
 const showMessage = ref(false);
 const isLoading = ref(false);
+const isLoadingSocial = ref(false);
 const router = useRouter();
 
 onMounted(async () => {
@@ -176,8 +179,8 @@ async function signup(ev: SubmitEventPromise) {
 }
 
 async function loginSocial(provider: string) {
+    isLoadingSocial.value = true;
     try {
-        isLoading.value = true;
         const res = await signinSocial(provider);
         if (res.error) throw Error(res.error.message);
         router.replace("/");
@@ -188,7 +191,7 @@ async function loginSocial(provider: string) {
         showMessage.value = true;
     }
     finally {
-        isLoading.value = false;
+        isLoadingSocial.value = false;
     }
 }
 

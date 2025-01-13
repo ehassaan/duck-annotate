@@ -23,7 +23,7 @@ export const auth = betterAuth({
         github: {
             clientId: process.env.GITHUB_CLIENT_ID || "",
             clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-            redirectURI: frontend_base_url?.href + "/auth/callback/github"
+            redirectURI: process.env.BACKEND_BASE_URL + "/api/auth/callback/github"
         }
     },
     advanced: {
