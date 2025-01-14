@@ -15,6 +15,7 @@ declare module 'vue' {
     ConnectRepository: typeof import('./src/components/ConnectRepository.vue')['default']
     copy: typeof import('./src/components/ManageSources copy.vue')['default']
     DynamicFields: typeof import('./src/components/DynamicFields.vue')['default']
+    FetchSchema: typeof import('./src/components/FetchSchema.vue')['default']
     Logo: typeof import('./src/components/Logo.vue')['default']
     ManageInfoSources: typeof import('./src/components/ManageInfoSources.vue')['default']
     ManageSources: typeof import('./src/components/ManageSources.vue')['default']

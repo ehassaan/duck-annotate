@@ -263,7 +263,7 @@ async function saveChanges() {
             return;
         }
 
-        await md.updateColumnMetadata(props.database, data);
+        await md.updateColumnMetadata(props.database, props.schema, data);
         for (const c of columns.value) {
             const item = data.find(col => col.column_name === c.column_name);
             if (item) {

@@ -1,9 +1,11 @@
 <template>
     <v-form :class="$style.form">
 
+        <v-progress-circular v-if="loadingList" style="align-self: center" indeterminate></v-progress-circular>
         <v-list :class="$style.list" v-if="vmInfoSources.length > 0">
 
-            <v-list-item :prepend-icon="item.source_type == 'github_issues' ? 'mdi-github' : 'mdi-code-tags'" :class="$style.listitem" elevation="3" v-for="item in vmInfoSources" :key="item.source_id">
+            <v-list-item :prepend-icon="item.source_type == 'github_issues' ? 'mdi-github' : 'mdi-code-tags'"
+                :class="$style.listitem" elevation="3" v-for="item in vmInfoSources" :key="item.source_id">
 
                 <template v-slot:title>
                     <v-item-title>
@@ -93,6 +95,7 @@ const vmInfoSources = ref<{
     loading?: boolean,
 }[]>([]);
 const vmAllRepos = ref<{ full_name: string; url: string; }[]>([]);
+const loadingList = ref(false);
 const loadingSchemas = ref(false);
 const loadingRepos = ref(false);
 const loadingAdd = ref(false);
@@ -108,10 +111,16 @@ let githubToken = ref<string>();
 
 
 onMounted(async () => {
-    setTimeout(async () => {
-        await md.db?.isInitialized();
+    loadingList.value = true;
+    await md.db?.isInitialized();
+    if (!md.connInfo || !md.db) return;
+    try {
         vmInfoSources.value = await md.checkEmbeddingStatus(md.connInfo.database, md.connInfo.schema);
-    }, 5000);
+    }
+    catch (err) { }
+    finally {
+        loadingList.value = false;
+    }
     setInterval(async () => {
         if (!md.connInfo || !md.db) return;
         try {
@@ -363,12 +372,8 @@ async function testVectors() {
 }
 
 .listitem {
-    margin: 10px;
+    margin: 5px;
     background-color: rgb(var(--theme-color-secondary));
-}
-
-.listitem:hover {
-    transform: scale(1.01);
 }
 
 .item_subtitle {

@@ -212,7 +212,8 @@ export async function checkEmbeddingStatus(database: string, schema: string) {
             count(*) filter(vector_embedding is not null) as embeddings_generated,
             count(*) filter(vector_embedding is null and len(description)>0) embeddings_missing
         FROM "${database}"."${schema}".information_sources 
-        GROUP BY source_id, source_type;
+        GROUP BY source_id, source_type
+        ORDER BY source_id
     `;
 
     const res = await db.evaluateQuery(query);

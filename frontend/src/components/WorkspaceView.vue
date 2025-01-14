@@ -6,8 +6,11 @@
             <v-tab value="datalake">
                 Connect Datalake
             </v-tab>
-            <v-tab value="sources">
-                Add Sources
+            <v-tab value="schema">
+                Fetch Database Schema
+            </v-tab>
+            <v-tab value="pull_data">
+                Configure Information Sources
             </v-tab>
             <v-tab value="information">
                 Select Information Sources
@@ -29,9 +32,16 @@
 
             </v-window-item>
 
-            <v-window-item value="sources" class="fill-height" color="secondary">
+            <v-window-item value="schema" class="fill-height" color="secondary">
                 <v-card :class="$style.window_card" color="secondary" :elevation="10">
-                    <v-card-title>Replicate Data</v-card-title>
+                    <v-card-title>Fetch Database Schema</v-card-title>
+                    <FetchSchema></FetchSchema>
+                </v-card>
+            </v-window-item>
+
+            <v-window-item value="pull_data" class="fill-height" color="secondary">
+                <v-card :class="$style.window_card" color="secondary" :elevation="10">
+                    <v-card-title>Configure Information Sources</v-card-title>
                     <ManageInfoSources></ManageInfoSources>
                 </v-card>
             </v-window-item>
@@ -65,6 +75,7 @@ import AnnotateTables from './AnnotateTables.vue';
 import ManageSources from './ManageSources.vue';
 import * as md from "@/services/motherduck";
 import ManageInfoSources from './ManageInfoSources.vue';
+import FetchSchema from './FetchSchema.vue';
 
 const tab = ref("datasource");
 const vmConnInfo = ref<{ database: string, token: string; schema: string; destinationId: string; }>();
