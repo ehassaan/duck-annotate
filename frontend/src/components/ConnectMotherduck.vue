@@ -15,8 +15,8 @@
         <v-select density="default" v-model="vmDatabase" :class="$style.field" :items="databases"
             @update:model-value="fetchSchemas" label="Select Database"></v-select>
 
-        <v-select density="default" :class="$style.field" v-model="vmSchema" :items="schemas"
-            label="Select Schema to Annotate"></v-select>
+        <v-select :loading="loadingSchemas" density="default" :class="$style.field" v-model="vmSchema"
+            item-title="title" item-value="value" :items="schemas" label="Select Schema to store metadata"></v-select>
 
         <!-- <v-checkbox density="compact" :class="$style.field" label="Annotate all tables"
             v-model="vmIsAllTables"></v-checkbox>
@@ -37,32 +37,15 @@ import { onMounted, ref } from 'vue';
 import * as md from "@/services/motherduck";
 import { $fetch } from '@/services/api';
 
-// const props = defineProps({
-//     token: {
-//         type: String,
-//         required: false
-//     },
-//     database: {
-//         type: String,
-//         default: "main"
-//     },
-//     schema: {
-//         type: String,
-//         default: "main"
-//     },
-//     destinationId: {
-//         type: String,
-//         required: ""
-//     }
-// });
 const emit = defineEmits(["connect", "submit", "disconnect"]);
 const vmToken = ref("");
-const vmSchema = ref<string>();
+const vmSchema = ref<string>("duck_annotate");
 const vmDatabase = ref("");
 const message = ref("");
 const loading = ref(false);
+const loadingSchemas = ref(false);
 const databases = ref<string[]>([]);
-const schemas = ref<string[]>([]);
+const schemas = ref<{ title: string; value: string; }[]>([]);
 // const tables = ref<string[]>([]);
 // const loadingTables = ref(false);
 // const vmIsAllTables = ref(true);
@@ -88,10 +71,28 @@ onMounted(async () => {
     }
 });
 
+
 async function disconnect() {
-    await md.disconnect();
-    vmToken.value = "";
-    emit('disconnect');
+    loading.value = true;
+    try {
+        let res = await $fetch('/api/airbyte/v1/destinations/' + destinationId.value,
+            {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+        if (res.error) {
+            message.value = "Failed to delete Airbyte destination: " + res.error.message;
+            console.error("Error deleting source: ", res.error);
+            return;
+        }
+    }
+    catch (err) {
+
+    }
+    finally {
+        loading.value = false;
+    }
+
 }
 
 async function connect(connInfo: any) {
@@ -122,18 +123,20 @@ async function fetchSchemas() {
     if (!md.db) {
         return;
     }
-    loading.value = true;
+    loadingSchemas.value = true;
     try {
         const schemaRes = await md.fetchSchemas(vmDatabase.value);
         console.log('schemas result', schemaRes, vmDatabase.value);
-        schemas.value = schemaRes;
+        schemas.value = schemaRes.map(s => ({ title: s, value: s }));
+        if (!schemas.value.find(s => s.value == "duck_annotate")) {
+            schemas.value.push({ title: "duck_annotate (new)", value: "duck_annotate" });
+        }
     } catch (err) {
         console.log('query failed', err);
     }
     finally {
-        loading.value = false;
+        loadingSchemas.value = false;
     }
-    loading.value = false;
 }
 
 // async function fetchTables(schema: string) {
@@ -156,42 +159,77 @@ async function submit() {
     // else {
     //     tableList = { ...vmSelectedTables.value };
     // }
+    loading.value = true;
     const connValues = {
         database: vmDatabase.value, token: vmToken.value, schema: vmSchema.value,
         // tables: tableList
     };
-    if (destinationId.value) {
-        const vals = { ...connValues, destinationId: destinationId.value };
-        console.log("Submitting: ", vals);
-        emit("submit", vals);
-        return;
-    }
-    loading.value = true;
-    const res = await $fetch('/api/airbyte/v1/destinations',
-        {
-            method: 'POST',
-            credentials: 'include',
-            body: {
+    try {
+        let res: { error: any, data: any; };
+        let vals: any;
+
+        if (connValues.schema == "duck_annotate") {
+            try {
+                await md.createSchema(connValues.database, "duck_annotate", true);
+            }
+            catch (err) {
+                console.log("Failed to create schema: ", err);
+                throw Error("Failed to create Motherduck schema");
+            }
+        }
+
+        if (destinationId.value) {
+            let body = {
                 "name": `${connValues.database}/${connValues.schema}`,
                 "configuration": {
-                    "destinationType": "duckdb",
                     "schema": connValues.schema,
                     "motherduck_api_key": connValues.token,
                     "destination_path": `md:${connValues.database}`
                 }
-            }
-        });
-    loading.value = false;
-    console.log("Airbyte Response: ", res);
-    if (res.error) {
-        message.value = 'Failed to create Airbyte destination: ' + res.error.message;
-        loading.value = false;
-        return;
+            };
+            console.log("Request body: ", body);
+            res = await $fetch('/api/airbyte/v1/destinations/' + destinationId.value,
+                {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    body: body
+                });
+            vals = { ...connValues, destinationId: destinationId.value };
+        }
+        else {
+            res = await $fetch('/api/airbyte/v1/destinations',
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: {
+                        "name": `${connValues.database}/${connValues.schema}`,
+                        "definitionId": "042ee9b5-eb98-4e99-a4e5-3f0d573bee66",
+                        "configuration": {
+                            "schema": connValues.schema,
+                            "motherduck_api_key": connValues.token,
+                            "destination_path": `md:${connValues.database}`
+                        }
+                    }
+                });
+            vals = { ...connValues, destinationId: (res.data as any).data.destinationId };
+        }
+        console.log("Airbyte Response: ", res);
+        if (res.error) {
+            message.value = 'Failed to create/update Airbyte destination: ' + res.error.message;
+            return;
+        }
+        destinationId.value = vals.destinationId;
+        console.log("Submitting: ", vals);
+        emit("submit", vals);
     }
-    const vals = { ...connValues, destinationId: (res.data as any).data.destinationId };
-    destinationId.value = vals.destinationId;
-    console.log("Submitting: ", vals);
-    emit("submit", vals);
+    catch (err) {
+        console.log("Failed: ", err);
+        message.value = 'Error: ' + err;
+    }
+    finally {
+        loading.value = false;
+    }
+
 }
 
 </script>

@@ -1,7 +1,38 @@
 <template>
     <v-form :class="$style.form">
 
-        <v-list :items="vmInfoSources" v-if="vmInfoSources.length > 0"></v-list>
+        <v-list :class="$style.list" v-if="vmInfoSources.length > 0">
+
+            <v-list-item :prepend-icon="item.source_type == 'github_issues' ? 'mdi-github' : 'mdi-code-tags'" :class="$style.listitem" elevation="3" v-for="item in vmInfoSources" :key="item.source_id">
+
+                <template v-slot:title>
+                    <v-item-title>
+                        {{ item.source_id }}
+                    </v-item-title>
+                </template>
+
+                <template v-slot:default>
+                    <p :class="$style.item_subtitle">
+                        Embeddings: {{ item.embeddings_generated }} / {{ item.total_chunks }}<br>
+                    </p>
+                    <p :class="$style.item_subtitle">
+                        Empty Chunks: {{ item.total_chunks - item.embeddings_generated - item.embeddings_missing }}
+                    </p>
+                </template>
+
+                <template v-slot:append>
+                    <div :class="$style.sourceActions">
+
+                        <v-btn v-if="item.embeddings_missing" color="surface" :loading="item.loading"
+                            @click="() => generateEmbeddings(item)">Generate
+                            {{
+                                item.embeddings_missing }} Embeddings</v-btn>
+
+                    </div>
+                </template>
+            </v-list-item>
+
+        </v-list>
 
         <div v-if="!addingIssues && !addingSource" :class="$style.source_btn_container">
             <v-btn prepend-icon="mdi-code-tags" @click="addSourceCode" :class="$style.button">Source Code</v-btn>
@@ -22,14 +53,16 @@
             <v-select label="Authentication" hide-details v-model="vmProvider" density="default"
                 :class="[$style.field, $style.provider]" :items="['Public', 'Github', 'Local']"></v-select>
             <v-btn v-if="vmProvider === 'Github'" prepend-icon="mdi-github" @click="onLoginGithub"
-                :class="$style.button">{{ githubToken ? 'Disconnect Github' : 'Login with Github' }}</v-btn>
+                :class="$style.button">{{
+                    githubToken ? 'Disconnect Github' : 'Login with Github' }}</v-btn>
 
-            <v-text-field label="Git URL" v-model="vmRepo" :class="$style.field"></v-text-field>
+            <v-text-field v-if="vmProvider !== 'Local'" label="Git URL" v-model="vmRepo"
+                :class="$style.field"></v-text-field>
 
         </div>
 
         <div v-if="addingIssues || addingSource" class="mb-4">
-            <v-btn :loading="loadingClone" :class="$style.button" @click="onAdd" :elevation="4">Add</v-btn>
+            <v-btn :loading="loadingAdd" :class="$style.button" @click="onAdd" :elevation="4">Add</v-btn>
             <v-btn :class="$style.button" color="secondary" :elevation="4" @click="cancelAdd">Cancel</v-btn>
         </div>
 
@@ -41,29 +74,28 @@
 
 <script setup lang="ts">
 
-import { onBeforeMount, ref, type PropType } from 'vue';
-import { MDConnection } from '@motherduck/wasm-client';
+import { onMounted, ref, type PropType } from 'vue';
 import { cloneRepo, readLocal } from '@/utils/gitUtil';
-import { getAllChunks, scanDirectory, type Chunk } from '@/utils/scanUtil';
+import { createTextChunks, getAllChunks, scanDirectory, type Chunk } from '@/utils/scanUtil';
 import * as embed from '@/utils/embeddingUtil';
 import * as storage from "@/utils/storageUtil";
-import * as oauth from "@/utils/oauth";
 import * as md from "@/services/motherduck";
 import * as auth from '@/services/auth';
 
-const vmMotherduck = ref({
-    tables: [],
-    token: "",
-    schema: "",
-    database: "",
-});
 
 const vmAllSchemas = ref<string[]>([]);
-const vmInfoSources = ref<{ type: string; path: string; }[]>([]);
+const vmInfoSources = ref<{
+    source_type: string,
+    source_id: string,
+    embeddings_generated: number,
+    embeddings_missing: number,
+    total_chunks: number,
+    loading?: boolean,
+}[]>([]);
 const vmAllRepos = ref<{ full_name: string; url: string; }[]>([]);
 const loadingSchemas = ref(false);
 const loadingRepos = ref(false);
-const loadingClone = ref(false);
+const loadingAdd = ref(false);
 const addingIssues = ref(false);
 const addingSource = ref(false);
 const vmRepo = ref<string>();
@@ -75,18 +107,30 @@ let engine: any = null;
 let githubToken = ref<string>();
 
 
-onBeforeMount(async () => {
-    vmMotherduck.value = md.connInfo;
+onMounted(async () => {
+    setTimeout(async () => {
+        await md.db?.isInitialized();
+        vmInfoSources.value = await md.checkEmbeddingStatus(md.connInfo.database, md.connInfo.schema);
+    }, 5000);
+    setInterval(async () => {
+        if (!md.connInfo || !md.db) return;
+        try {
+            vmInfoSources.value = await md.checkEmbeddingStatus(md.connInfo.database, md.connInfo.schema);
+        }
+        catch (err) {
+            console.error("Error: ", err);
+        }
+    }, 30000);
+
 });
 
 async function fetchSchemas() {
     loadingSchemas.value = true;
+    // console.log("Fetching Schemas: ", vmMotherduck.value.token);
     try {
-        await md.connect(vmMotherduck.value.token);
+        if (!md.connInfo || !md.db) throw Error("Connection not initialized");
+
         vmAllSchemas.value = await md.fetchSchemas(md.connInfo.database);
-        // const res = await connection.evaluatePreparedStatement("select distinct schema_name from information_schema.schemata where catalog_name=?", [vmMotherduck.value.database]);
-        // console.log('query result', res);
-        // vmAllSchemas.value = res.data.toRows().map((r: any) => r.schema_name) as string[];
     }
     catch (err) {
         console.log('query failed', err);
@@ -111,10 +155,39 @@ async function onAdd() {
             message.value = "Please select a repository";
             return;
         }
-        vmInfoSources.value.push({
-            type: "github_issues",
-            path: vmRepo.value,
-        });
+        loadingAdd.value = true;
+        try {
+            if (!md.connInfo || !md.db) throw Error("Connection not initialized");
+            const result = await md.db.evaluateQuery(`
+                select title as title,
+                body as description,
+                repository_url as source_id,
+                'github_issues' as source_type
+                FROM "${md.connInfo.database}"."${md.connInfo.schema}".issues
+                WHERE repository_url = '${vmRepo.value}'
+            `);
+            let all_chunks: any[] = [];
+            for (const row of result?.data.toRows() as any) {
+                all_chunks.push(...createTextChunks(row, 1000));
+            }
+            await md.loadInformationSource(md.connInfo.database, md.connInfo.schema, "github_issues", all_chunks);
+            vmInfoSources.value.push({
+                source_type: "github_issues",
+                source_id: vmRepo.value,
+                total_chunks: all_chunks.length,
+                embeddings_generated: 0,
+                embeddings_missing: all_chunks.length,
+            });
+            addingIssues.value = false;
+        }
+        catch (err) {
+            console.log("Error: ", err);
+            message.value = "Failed to add issues: " + err;
+        }
+        finally {
+            loadingAdd.value = false;
+        }
+
     }
     else if (addingSource.value) {
         if (vmProvider.value === "Local") {
@@ -124,6 +197,7 @@ async function onAdd() {
             await clone();
         }
     }
+    addingSource.value = false;
 }
 
 async function cancelAdd() {
@@ -133,11 +207,13 @@ async function cancelAdd() {
 
 async function fetchRepos(schema: string) {
     console.log("Fetching repos: ", schema);
-    if (!schema) return;
+    if (!schema || !md.db || !md.connInfo) return;
 
     loadingRepos.value = true;
     try {
-        const res = await md.db?.evaluateQuery(`select distinct full_name, url from ${vmMotherduck.value.database.replaceAll(" ", "")}.${schema.replaceAll(" ", "")}.repositories`);
+        const query = `select distinct full_name, url from "${md.connInfo.database}"."${schema}".repositories`;
+        console.log("Query: ", query);
+        const res = await md.db.evaluateQuery(query);
         console.log('query result', res);
         if (!res) throw Error("Did not find any repositories data in selected schema");
         vmAllRepos.value = res?.data.toRows() as any;
@@ -165,24 +241,26 @@ async function onLoginGithub() {
 }
 
 async function readLocalGit() {
-    loadingClone.value = true;
+    loadingAdd.value = true;
     console.log("Reading: ", vmProvider.value, vmRepo.value);
     try {
+        if (!md.connInfo || !md.db) throw Error("Connection not initialized");
         message.value = "Loading...";
         const dir = await readLocal();
         await scanRepo(dir);
+        vmInfoSources.value = await md.checkEmbeddingStatus(md.connInfo.database, md.connInfo.schema);
     }
     catch (err) {
         console.log("Error while reading: ", err);
     }
     finally {
-        loadingClone.value = false;
+        loadingAdd.value = false;
         message.value = "";
     }
 }
 
 async function clone() {
-    loadingClone.value = true;
+    loadingAdd.value = true;
     console.log("Cloning: ", vmProvider.value, vmRepo.value);
     try {
         if (!vmRepo.value) {
@@ -192,19 +270,19 @@ async function clone() {
         if (vmProvider.value === "Github") {
             message.value = "Cloning...";
             const chunks = await cloneRepo(vmRepo.value);
-            await saveChunks(chunks);
+            await saveChunks(vmRepo.value, chunks);
         }
         else if (vmProvider.value === "Public") {
             message.value = "Cloning...";
             const chunks = await cloneRepo(vmRepo.value);
-            await saveChunks(chunks);
+            await saveChunks(vmRepo.value, chunks);
         }
     }
     catch (err) {
         console.log("Error while cloning: ", err);
     }
     finally {
-        loadingClone.value = false;
+        loadingAdd.value = false;
         // message.value = "";
     }
 }
@@ -215,10 +293,46 @@ async function scanRepo(dir: FileSystemDirectoryHandle) {
     message.value = `Analyzing ${files.length} files...`;
     const chunks = await getAllChunks(files, 500);
     console.log("Files: ", files, chunks);
-    await saveChunks(chunks);
+    await saveChunks(`local:${dir.name}`, chunks);
 }
 
-async function saveChunks(chunks: Chunk[]) {
+async function saveChunks(source_id: string, chunks: Chunk[]) {
+    try {
+        if (!md.connInfo) throw Error("Connection not initialized");
+
+        await md.loadInformationSource(md.connInfo.database,
+            md.connInfo.schema,
+            source_id,
+            chunks.map(chunk => {
+                return {
+                    source_id: source_id,
+                    source_type: "code:python",
+                    title: chunk.file,
+                    description: JSON.parse(JSON.stringify(chunk.text)),
+                };
+            }));
+    }
+    catch (err) {
+        console.log("Error: ", err);
+    }
+}
+
+async function generateEmbeddings(item: any) {
+    try {
+        if (!md.connInfo || !md.db) throw Error("Motherduck connection not initialized");
+        item.loading = true;
+        await md.generateEmbeddings(md.connInfo.database, md.connInfo.schema, item.source_id);
+    }
+    catch (err) {
+        console.log("Error: ", err);
+        message.value = "Failed to generate embeddings: " + err;
+    }
+    finally {
+        item.loading = false;
+    }
+}
+
+async function saveChunksLocally(chunks: Chunk[]) {
     engine = embed.createEngine();
     await embed.indexDocs(engine, chunks);
     const serialized = embed.serializeEngine(engine);
@@ -241,6 +355,25 @@ async function testVectors() {
 .form {
     display: flex;
     flex-direction: column;
+}
+
+.list {
+    background-color: rgb(var(--theme-color-secondary));
+    color: black;
+}
+
+.listitem {
+    margin: 10px;
+    background-color: rgb(var(--theme-color-secondary));
+}
+
+.listitem:hover {
+    transform: scale(1.01);
+}
+
+.item_subtitle {
+    font-size: 12px;
+    font-weight: lighter
 }
 
 .source_btn_container {

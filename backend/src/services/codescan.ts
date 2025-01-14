@@ -25,6 +25,7 @@ function getName(node: any): string | null {
 
 async function getChunks(filePath: string, maxChunkSize: number = 1500) {
     const tree = await parseFile(filePath);
+
     const chunks: Chunk[] = [];
     let comment: string | null = null;
     let groups: string[] = [];

@@ -1,27 +1,31 @@
 
-import { configureSingle, fs as fSys } from '@zenfs/core';
-import { WebAccess } from '@zenfs/dom';
+// import { configureSingle, fs as fSys } from '@zenfs/core';
+// import { WebAccess } from '@zenfs/dom';
 
 
-export const fs = fSys.promises;
+// export const fs = fSys.promises;
+let dir: FileSystemDirectoryHandle = null;
 
 export async function configure() {
-    const dir = await window.navigator.storage.getDirectory();
-    await configureSingle({ backend: WebAccess, handle: dir });
+    dir = await window.navigator.storage.getDirectory();
+    // await configureSingle({ backend: WebAccess, handle: dir });
 }
 
 export async function setKey(key: string, value: string) {
-    const path = '/keyval/' + key;
-    try {
-        await fs.mkdir('/keyval');
-    }
-    catch (e) {
-        console.warn("Exists: ", e)
-    }
-    await fs.writeFile(path, value);
+    if (!dir) throw Error("Storage is not configured");
+
+
+    const keyval = await dir.getDirectoryHandle('keyval', { create: true });
+    const file = await keyval.getFileHandle(key, { create: true });
+    const writer = await file.createWritable({ keepExistingData: false });
+    await writer.write(value);
+    await writer.close();
 }
 
 export async function getKey(key: string) {
-    const path = '/keyval/' + key;
-    return (await fs.readFile(path)).toString('utf8');
+
+    const keyval = await dir.getDirectoryHandle('keyval', { create: true });
+    const file = await keyval.getFileHandle(key, { create: false });
+    const text = (await file.getFile()).text();
+    return text;
 }

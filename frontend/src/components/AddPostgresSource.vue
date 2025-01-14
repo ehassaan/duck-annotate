@@ -29,16 +29,28 @@ import * as md from "@/services/motherduck";
 const message = ref("");
 const showMessage = ref(false);
 const loading = ref(false);
-const destinationId = computed(() => md.connInfo.destinationId);
+const destinationId = computed(() => md.connInfo?.destinationId);
+
+// const vmPostgres = ref({
+//     name: "MyDataSource",
+//     host: "",
+//     port: 5432,
+//     database: "",
+//     username: "",
+//     password: "",
+//     schema: "public",
+//     method: "Xmin"
+// });
 
 const vmPostgres = ref({
+    target: "$annotate",
     name: "MyDataSource",
-    host: "",
+    host: "ep-damp-mountain-a5dm3p26.us-east-2.aws.neon.tech",
     port: 5432,
-    database: "",
-    username: "",
-    password: "",
-    schema: "public",
+    database: "backend",
+    username: "backend_owner",
+    password: "Wj0ZtghJ4MIK",
+    // schema: "public",
     method: "Xmin"
 });
 
@@ -81,13 +93,13 @@ const optsPostgres: DynamicField[] = [
         required: true,
         rules: [(v: string) => v.length > 0 || 'Field is required']
     },
-    {
-        label: "Schema",
-        type: "text",
-        name: "schema",
-        required: true,
-        rules: [(v: string) => v.length > 0 || 'Field is required'],
-    },
+    // {
+    //     label: "Schema",
+    //     type: "text",
+    //     name: "schema",
+    //     required: true,
+    //     rules: [(v: string) => v.length > 0 || 'Field is required'],
+    // },
     {
         label: "Username",
         type: "text",
@@ -108,7 +120,7 @@ const optsPostgres: DynamicField[] = [
         name: "method",
         required: true,
         rules: [(v: string) => v.length > 0 || 'Field is required'],
-        options: [{ value: "Xmin", text: "Xmin" }]
+        options: [{ value: "Xmin", title: "Xmin" }]
     }
 ];
 
@@ -138,7 +150,7 @@ async function submit(ev: SubmitEventPromise) {
                 "port": vmPostgres.value.port,
                 "database": vmPostgres.value.database,
                 "schemas": [
-                    vmPostgres.value.schema
+                    "information_schema", "pg_catalog"
                 ],
                 "username": vmPostgres.value.username,
                 "password": vmPostgres.value.password

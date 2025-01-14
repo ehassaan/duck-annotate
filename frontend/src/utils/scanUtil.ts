@@ -133,4 +133,45 @@ export async function getAllChunks(files: File[], maxChunkSize: number) {
         chunks.push(...await getChunks(file, maxChunkSize));
     }
     return chunks;
-};;;;
+};
+
+
+
+export function createTextChunks(args: { source_id: string, description: string, title: string, source_type: string; },
+    maxChunkSize: number) {
+
+    if (!args.description || args.description.length === 0) return [];
+    const chunks = splitText(args.description, maxChunkSize);
+
+    return chunks.map((chunk) => ({
+        source_id: args.source_id,
+        source_type: args.source_type,
+        title: args.title,
+        description: chunk,
+    }));
+}
+
+function splitText(text: string, maxChunkSize: number) {
+    let chunks = text.replaceAll('\r\n', '\n').split('.\n');
+
+    if (chunks.length === 1) {
+        chunks = text.split("\n");
+    }
+    if (chunks.length === 1) {
+        chunks = text.split(".");
+    }
+    if (chunks.length === 1) {
+        return [text.slice(0, maxChunkSize)]; // just give up already
+    }
+
+    let final_chunks: string[] = [];
+    for (let chunk of chunks) {
+        if (chunk.length > maxChunkSize) {
+            final_chunks.push(...splitText(chunk, maxChunkSize));
+        }
+        else {
+            final_chunks.push(chunk);
+        }
+    }
+    return final_chunks;
+}

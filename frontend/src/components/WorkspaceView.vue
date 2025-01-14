@@ -31,15 +31,15 @@
 
             <v-window-item value="sources" class="fill-height" color="secondary">
                 <v-card :class="$style.window_card" color="secondary" :elevation="10">
-                    <v-card-title>Data Sources</v-card-title>
-                    <ManageSources></ManageSources>
+                    <v-card-title>Replicate Data</v-card-title>
+                    <ManageInfoSources></ManageInfoSources>
                 </v-card>
             </v-window-item>
 
 
             <v-window-item value="information">
                 <v-card :class="$style.window_card" color="secondary" :elevation="10">
-                    <v-card-title>Add Information Sources</v-card-title>
+                    <v-card-title>Select Relevant Sources</v-card-title>
                     <ConnectRepository @submit="saveCreds"></ConnectRepository>
                 </v-card>
             </v-window-item>
@@ -64,6 +64,7 @@ import ConnectRepository from './ConnectRepository.vue';
 import AnnotateTables from './AnnotateTables.vue';
 import ManageSources from './ManageSources.vue';
 import * as md from "@/services/motherduck";
+import ManageInfoSources from './ManageInfoSources.vue';
 
 const tab = ref("datasource");
 const vmConnInfo = ref<{ database: string, token: string; schema: string; destinationId: string; }>();

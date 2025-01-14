@@ -1,23 +1,22 @@
 <template>
 
     <VProgressCircular :class="$style.loading" indeterminate v-if="loading"></VProgressCircular>
-    <v-list item-props :items="connections" v-if="connections.length>0">
-        <template v-slot:item="item">
-            <v-list-item v-bind=item.props>
-                <template v-slot:append>
-                    <div :class="$style.sourceActions">
-                        <v-btn v-if="item.props.connId" :loading="loadingConn" @click="() => syncNow(item.props)">{{
-                            item.props.isSyncing ? 'Syncing...' : 'Sync Now' }}</v-btn>
+    <v-list :class="$style.list" :items="connections" v-if="connections.length > 0">
+        <v-list-item elevation="3" v-for="item in connections" :key="item.key" v-bind="item">
+            <template v-slot:append>
+                <div :class="$style.sourceActions">
+                    <v-btn color="primary" v-if="item.connId" :loading="loadingConn" @click="() => syncNow(item)">{{
+                        item.isSyncing ? 'Syncing...' : 'Sync Now' }}</v-btn>
 
-                        <v-btn :loading="loadingConn" @click="() => createConnection(item.props)"
-                            v-if="!item.props.connId">Create Connection</v-btn>
-                        <v-btn color="danger" icon="mdi-trash-can-outline" variant="text"
-                            @click="() => deleteSource(item.props)"></v-btn>
-                    </div>
-                </template>
-            </v-list-item>
+                    <v-btn color="primary" :loading="loadingConn" @click="() => createConnection(item)"
+                        v-if="!item.connId">Create
+                        Connection</v-btn>
+                    <v-btn color="danger" icon="mdi-trash-can-outline" variant="text"
+                        @click="() => deleteSource(item)"></v-btn>
+                </div>
+            </template>
+        </v-list-item>
 
-        </template>
     </v-list>
 
     <v-btn v-if="!creatingPg" :class="$style.button" color="primary" @click="() => creatingPg = true">Add New</v-btn>
@@ -161,8 +160,14 @@ async function createConnection(source: any) {
             "nonBreakingSchemaUpdatesBehavior": "propagate_fully",
             "status": "active",
             "dataResidency": "auto",
-            "destinationId": md.connInfo.destinationId,
+            "destinationId": md.connInfo?.destinationId,
             "sourceId": source.key,
+            "prefix": "",
+            "syncCatalog": [
+                {
+                    streams: [{ name: "pg_catalog" }, { name: "information_schema" }]
+                }
+            ],
             "name": source.name
         }
     });
@@ -198,6 +203,15 @@ async function createConnection(source: any) {
     margin: 5px auto 10px auto;
     align-self: center;
     display: block;
+}
+
+.list {
+    background-color: rgb(var(--theme-color-secondary));
+    color: black;
+}
+
+.listitem {
+    background-color: rgb(var(--theme-color-secondary));
 }
 
 .sourceActions {

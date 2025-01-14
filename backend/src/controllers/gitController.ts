@@ -13,6 +13,10 @@ export default new Elysia({ prefix: '/git' })
 
         const git_url = body.git_https_url;
         const git_name = git_url.split('/').pop();
+        let pattern = "**/*.py";
+        if (body.pattern) {
+            pattern = body.pattern;
+        }
 
         if (!git_name || git_name === "") {
             return error(422, {
@@ -29,7 +33,7 @@ export default new Elysia({ prefix: '/git' })
             // const res = await git.clone({ fs: fs, http: gitHttp, dir, url: 'https://github.com/isomorphic-git/lightning-fs' });
             await cloneRepo(path.dirname(dir), git_url, body.branch);
             console.log("Cloned Successfully");
-            const result = await scanRepo(dir, "python", "**/*.py", 1500);
+            const result = await scanRepo(dir, "python", pattern, 1500);
             return {
                 message: "Success",
                 data: result
@@ -45,6 +49,7 @@ export default new Elysia({ prefix: '/git' })
     }, {
         body: t.Object({
             git_https_url: t.String(),
-            branch: t.Optional(t.String())
+            branch: t.Optional(t.String()),
+            pattern: t.Optional(t.String()),
         })
     });

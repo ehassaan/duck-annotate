@@ -5,7 +5,13 @@
         </v-snackbar>
         <DynamicFields :fields="formOpts" v-model="vmForm"></DynamicFields>
 
-        <v-btn :class="$style.button" type="submit" :loading="loading" block color="primary">Create</v-btn>
+        <div>
+            <v-btn :disabled="!destinationId" :class="$style.button" type="submit" :loading="loading"
+                color="primary">Create</v-btn>
+            <v-btn :class="$style.button" type="button" @click="() => emit('cancel')" color="secondary">Cancel</v-btn>
+        </div>
+
+        <label v-if="!destinationId">Please connect Motherduck first {{ destinationId }}</label>
 
     </v-form>
 
@@ -13,36 +19,49 @@
 
 <script setup lang="ts">
 
-import { onMounted, ref } from 'vue';
-import * as md from "@/services/motherduck";
+import { computed, onMounted, ref } from 'vue';
 import DynamicFields from './DynamicFields.vue';
 import type { DynamicField } from "@/entities/DynamicField";
 import type { SubmitEventPromise } from 'vuetify';
 import { $fetch } from '@/services/api';
+import * as md from "@/services/motherduck";
 
 const message = ref("");
 const showMessage = ref(false);
 const loading = ref(false);
+const destinationId = computed(() => md.connInfo?.destinationId);
 
-// const vmPostgres = ref({
-// name: "MyDataSource",
-//     host: "",
-//     port: 5432,
-//     database: "",
-//     username: "",
-//     password: "",
-//     schema: "public",
-//     method: "Xmin"
-// });
-
-const emit = defineEmits(["created"]);
+const emit = defineEmits(["created", "cancel"]);
 
 const vmForm = ref({
     name: "MyInfoSource",
-    repositories: "airbytehq/airbyte",
-    branches: "airbyte/main",
+    repositories: "",
+    duration: 30,
     pat: ""
 });
+
+const durationOptions = [
+    {
+        title: "30 days",
+        value: 30
+    },
+    {
+        title: "60 days",
+        value: 60
+    },
+    {
+        title: "6 months",
+        value: 180
+    },
+    {
+        title: "1 year",
+        value: 365
+    },
+    {
+        title: "5 years",
+        value: 1825
+    },
+];
 
 const formOpts: DynamicField[] = [
     {
@@ -53,17 +72,18 @@ const formOpts: DynamicField[] = [
         rules: [(v: string) => v.length > 0 || 'Field is required']
     },
     {
-        label: "Repositories (comma separated)",
+        label: "Repositories (e.g. org/repo,org/another-repo,org/*,org/a*)",
         type: "text",
         name: "repositories",
         required: true,
         rules: [(v: string) => v.length > 0 || 'Field is required']
     },
     {
-        label: "Branches (comma separated)",
-        type: "branches",
-        name: "port",
+        label: "Duration",
+        type: "select",
+        name: "duration",
         required: true,
+        options: durationOptions,
     },
     {
         label: "Personal Access Token",
@@ -74,13 +94,10 @@ const formOpts: DynamicField[] = [
     },
 ];
 
+
 onMounted(async () => {
 
 });
-
-async function disconnect() {
-    await md.disconnect();
-}
 
 
 async function submit(ev: SubmitEventPromise) {
@@ -98,13 +115,11 @@ async function submit(ev: SubmitEventPromise) {
                     "option_title": "PAT Credentials",
                     "personal_access_token": vmForm.value.pat
                 },
+                "prefix": "",
                 "max_waiting_time": 10,
-                "branches": [
-                    ...vmForm.value.branches.split(",")
-                ],
-                "start_date": "2021-03-01T00:00:00Z",
+                "start_date": new Date(Date.now() - vmForm.value.duration * 24 * 60 * 60 * 1000).toISOString().split(".")[0] + "Z",
                 "repositories": [
-                    ...vmForm.value.repositories.split(",")
+                    ...vmForm.value.repositories.split(",").map(r => r.trim())
                 ]
             }
         };
@@ -119,6 +134,7 @@ async function submit(ev: SubmitEventPromise) {
             showMessage.value = true;
             return;
         }
+
         message.value = "Created";
         showMessage.value = true;
         emit('created', (res.data as any)?.data);

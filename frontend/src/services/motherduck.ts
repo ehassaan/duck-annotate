@@ -1,14 +1,22 @@
 
 import { MDConnection } from "@motherduck/wasm-client";
 import _ from "lodash";
+import { escape } from 'sqlstring';
 
-// TODO: There seems to be some bug in motherduck wasm client which makes the evaluatePreparedStatment takes foverever. Using evaluateQuery() for now
+// TODO: There seems to be some bug and limitations in evaluatePreparedStatment in wasm-client. Using evaluateQuery() for now
 
 export let db: MDConnection | null = null;
 
-export let connInfo: any = {};
+export interface MDCreds {
+    token: string;
+    database: string;
+    schema: string;
+    destinationId: string;
+}
 
-export function setCreds(creds: any) {
+export let connInfo: MDCreds | null = null;
+
+export function setCreds(creds: MDCreds) {
     connInfo = creds;
 }
 
@@ -25,6 +33,12 @@ export async function connect(token: string) {
 
 export async function disconnect() {
     await db?.close();
+}
+
+export async function createSchema(database: string, name: string, ignoreIfExist: boolean) {
+    if (!db) throw Error("Database is not initialized");
+    const query = `CREATE SCHEMA ${ignoreIfExist ? 'IF NOT EXISTS ' : ''}"${database}"."${name}"`;
+    await db.evaluateQuery(query);
 }
 
 export async function fetchDatabases() {
@@ -77,7 +91,7 @@ export async function fetchColumnMetadata(database: string, schema: string, tabl
                     schema_name 
                 order by created_at desc) 
                 as _rn
-            from ${database}._metadata.column_metadata
+            from "${database}"."${schema}".column_metadata
             ) cmeta
             on cmeta.table_name = info.table_name 
                 AND cmeta.column_name = info.column_name 
@@ -95,7 +109,7 @@ export async function fetchColumnMetadata(database: string, schema: string, tabl
 function clean(value: any) {
     if (_.isUndefined(value) || _.isNull(value)) return "null";
     if (typeof value === "string") {
-        return `'${value}'`;
+        return `E${escape(value)}`;
     }
     return `${value}`;
 }
@@ -103,13 +117,13 @@ function clean(value: any) {
 export async function insertData(database: string, schema: string, table: string, data: any[]) {
     if (!db) throw Error("Database is not initialized");
     const values = data.map(d => `(${Object.values(d).map(clean).join(",")})`).join(", ");
-    const query = `INSERT INTO ${database}.${schema}.${table} (${Object.keys(data[0]).join(',')})
+    const query = `INSERT INTO "${database}"."${schema}"."${table}" (${Object.keys(data[0]).join(',')})
         VALUES ${values}`;
     console.log("Query: ", query);
     const result = await db.evaluateQuery(query);
 }
 
-export async function updateColumnMetadata(database: string, data: {
+export async function updateColumnMetadata(database: string, schema: string, data: {
     schema_name: string,
     table_name: string,
     column_name: string,
@@ -118,13 +132,13 @@ export async function updateColumnMetadata(database: string, data: {
 }[]) {
     if (!db) throw Error("Database is not initialized");
 
-    await db.evaluateQuery(`USE ${database}._metadata`);
+    await db.evaluateQuery(`USE "${database}"."${schema}"`);
 
     await db.evaluateQuery(`CREATE SEQUENCE IF NOT EXISTS '_dl_column_metadata_id_seq';`);
 
     await db.evaluateQuery(`
-        CREATE TABLE IF NOT EXISTS ${database}._metadata.column_metadata ( 
-        id INTEGER NOT NULL PRIMARY KEY DEFAULT nextval('_metadata._dl_column_metadata_id_seq'),
+        CREATE TABLE IF NOT EXISTS "${database}"."${schema}"."column_metadata" ( 
+        id INTEGER NOT NULL PRIMARY KEY DEFAULT nextval('"${schema}"._dl_column_metadata_id_seq'),
         database_name TEXT NOT NULL,
         schema_name TEXT NOT NULL,
         table_name TEXT NOT NULL,
@@ -134,5 +148,73 @@ export async function updateColumnMetadata(database: string, data: {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
     `);
 
-    await insertData(database, "_metadata", 'column_metadata', data);
+    await insertData(database, schema, 'column_metadata', data);
+}
+
+export async function loadInformationSource(database: string, schema: string, source_id: string, data: {
+    source_id: string,
+    source_type: string,
+    title: string;
+    description: string;
+}[]) {
+    if (!db) throw Error("Database is not initialized");
+
+    const query = `
+        CREATE TABLE IF NOT EXISTS "${database}"."${schema}"."information_sources" (
+        source_id TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        title TEXT,
+        description TEXT,
+        vector_embedding FLOAT[512],
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+    `;
+
+    console.debug("Running query: ", query);
+    await db.evaluateQuery(query);
+
+    await db.evaluateQuery(`
+    DELETE FROM "${database}"."${schema}"."information_sources"
+    WHERE source_id='${source_id}';
+    `);
+
+    await insertData(database, schema, 'information_sources', data);
+
+}
+
+
+export async function generateEmbeddings(database: string, schema: string, source_id: string) {
+    if (!db) throw Error("Database is not initialized");
+
+    const query = `
+        UPDATE "${database}"."${schema}".information_sources SOURCE 
+        SET vector_embedding = embedding(concat(title, '\n  ', description))
+        WHERE SOURCE.vector_embedding is null and len(SOURCE.description)>0 and source_id='${source_id}';
+    `;
+
+    await db.evaluateQuery(query);
+}
+
+
+export interface EmbeddingStatus {
+    source_id: string;
+    embeddings_generated: number;
+    embeddings_missing: number;
+    total_chunks: number;
+    source_type: string;
+}
+
+export async function checkEmbeddingStatus(database: string, schema: string) {
+    if (!db) throw Error("Database is not initialized");
+    const query = `
+        SELECT source_id,
+            source_type,
+            count(*) as total_chunks,
+            count(*) filter(vector_embedding is not null) as embeddings_generated,
+            count(*) filter(vector_embedding is null and len(description)>0) embeddings_missing
+        FROM "${database}"."${schema}".information_sources 
+        GROUP BY source_id, source_type;
+    `;
+
+    const res = await db.evaluateQuery(query);
+    return res.data.toRows() as any as EmbeddingStatus[];
 }

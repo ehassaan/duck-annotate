@@ -80,7 +80,19 @@ export const airbyteRoutes = [
         route: "/v1/sources/:id",
         workspaceParam: "workspaceId",
     },
-] as AirbyteRequestOptions[];
+    {
+        type: "UPDATE",
+        route: "/v1/destinations/:id",
+        workspaceParam: "workspaceId",
+    },
+] as AirbyteRequestRoute[];
+
+export interface AirbyteRequestRoute {
+    type: "LIST" | "CREATE" | "GET" | "DELETE" | "UPDATE";
+    workspaceParam?: string;
+    route: string;
+    verifyResponseWs?: boolean;
+}
 
 
 export async function getOrFetchAirbyteToken() {
@@ -117,7 +129,7 @@ export async function getOrFetchAirbyteToken() {
 
 
 export interface AirbyteRequestOptions {
-    method?: "GET" | "POST" | "DELETE" | "PUT";
+    method?: "GET" | "POST" | "DELETE" | "PATCH";
     path: string;
     query?: any;
     body?: any;
@@ -146,6 +158,19 @@ export async function airbyteDelete(args: Omit<AirbyteRequestOptions, "body" | "
     if (!res.error && res.data && res.data.workspaceId === args.workspaceId) {
         const res = await airbyteRequest({ method: "DELETE", path, query });
         return res;
+    }
+    else return {
+        error: res.error ?? { status: 400, message: "No resource found for the attached workspace" }
+    };
+}
+
+export async function airbyteUpdate(args: Omit<AirbyteRequestOptions, "query" | "method">) {
+    const path = args.path.replace("/api/airbyte", "");
+    const res = await airbyteRequest({ method: "GET", path });
+
+    if (!res.error && res.data && res.data.workspaceId === args.workspaceId) {
+        const resUpdate = await airbyteRequest({ method: "PATCH", path, body: args.body });
+        return resUpdate;
     }
     else return {
         error: res.error ?? { status: 400, message: "No resource found for the attached workspace" }
@@ -193,6 +218,7 @@ async function airbyteRequest<T = any>(args: Omit<AirbyteRequestOptions, "worksp
             error: tokenRes.error
         };
     }
+    console.debug("Airbyte Request: ", args);
     const res = await $fetch<T>(args.path, {
         method: args.method,
         query: args.query,
@@ -202,5 +228,6 @@ async function airbyteRequest<T = any>(args: Omit<AirbyteRequestOptions, "worksp
         },
     });
     console.debug("Airbyte response: ", res);
+    // if (res.data === "" || (res.data as any)?.data === "") return { error: res.error, data: null };
     return res;
 }

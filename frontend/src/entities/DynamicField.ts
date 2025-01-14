@@ -7,5 +7,5 @@ export interface DynamicField {
     type: string;
     required?: boolean;
     rules?: ((v: any) => boolean | string)[];
-    options?: { text: string; value: string; }[];
+    options?: { title: string; value: any; }[];
 }

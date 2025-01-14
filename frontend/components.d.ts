@@ -13,6 +13,7 @@ declare module 'vue' {
     ConnectAirbyte: typeof import('./src/components/ConnectAirbyte.vue')['default']
     ConnectMotherduck: typeof import('./src/components/ConnectMotherduck.vue')['default']
     ConnectRepository: typeof import('./src/components/ConnectRepository.vue')['default']
+    copy: typeof import('./src/components/ManageSources copy.vue')['default']
     DynamicFields: typeof import('./src/components/DynamicFields.vue')['default']
     Logo: typeof import('./src/components/Logo.vue')['default']
     ManageInfoSources: typeof import('./src/components/ManageInfoSources.vue')['default']
