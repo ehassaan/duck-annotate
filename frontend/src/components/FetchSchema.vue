@@ -3,15 +3,15 @@
     <v-form :class="$style.form" @submit.prevent="submit">
         <v-snackbar v-model="showMessage" :text="message" :timeout="6000">
         </v-snackbar>
-        <DynamicFields :fields="optsPostgres" v-model="vmPostgres"></DynamicFields>
+        <DynamicFields :fields="optsPostgres" v-model="vmForm"></DynamicFields>
 
         <div>
-            <v-btn :disabled="!md.db" :class="$style.button" type="submit" :loading="loading"
-                color="primary">Create</v-btn>
+            <v-btn :disabled="!isMd" :class="$style.button" type="submit" :loading="loading"
+                color="primary">Fetch</v-btn>
             <v-btn :class="$style.button" type="button" @click="() => emit('cancel')" color="secondary">Cancel</v-btn>
         </div>
 
-        <label v-if="!md.db">Please connect Motherduck first</label>
+        <label v-if="!isMd">Please connect Motherduck first</label>
 
     </v-form>
 
@@ -19,27 +19,36 @@
 
 <script setup lang="ts">
 
-import { computed, mergeProps, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import DynamicFields from './DynamicFields.vue';
 import type { DynamicField } from "@/entities/DynamicField";
 import type { SubmitEventPromise } from 'vuetify';
 import { $fetch } from '@/services/api';
 import * as md from "@/services/motherduck";
+import type { SchemaField } from '@/entities/SchemaField';
+import _ from 'lodash';
 
 const message = ref("");
 const showMessage = ref(false);
 const loading = ref(false);
-const destinationId = computed(() => md.connInfo?.destinationId);
+const isMd = computed(() => md.connInfo != null);
 
-const vmPostgres = ref({
+// const vmForm = ref({
+//     name: "",
+//     host: "",
+//     port: 5432,
+//     database: "",
+//     username: "",
+//     password: "",
+// });
+
+const vmForm = ref({
     name: "MyDataSource",
-    host: "",
+    host: "ep-damp-mountain-a5dm3p26.us-east-2.aws.neon.tech",
     port: 5432,
-    database: "",
-    username: "",
-    password: "",
-    schema: "public",
-    method: "Xmin"
+    database: "backend",
+    username: "backend_owner",
+    password: "Wj0ZtghJ4MIK",
 });
 
 
@@ -48,18 +57,10 @@ const emit = defineEmits(["created", "cancel"]);
 
 const optsPostgres: DynamicField[] = [
     {
-        label: "Target Motherduck Schema",
-        type: "text",
-        name: "target",
-        required: true,
-        rules: [(v: string) => v.length > 0 || 'Field is required']
-    },
-    {
-        label: "Name",
+        label: "Catalog Name (defaults to database name)",
         type: "text",
         name: "name",
-        required: true,
-        rules: [(v: string) => v.length > 0 || 'Field is required']
+        required: false,
     },
     {
         label: "Host",
@@ -81,13 +82,6 @@ const optsPostgres: DynamicField[] = [
         required: true,
         rules: [(v: string) => v.length > 0 || 'Field is required']
     },
-    // {
-    //     label: "Schema",
-    //     type: "text",
-    //     name: "schema",
-    //     required: true,
-    //     rules: [(v: string) => v.length > 0 || 'Field is required'],
-    // },
     {
         label: "Username",
         type: "text",
@@ -102,15 +96,8 @@ const optsPostgres: DynamicField[] = [
         required: true,
         rules: [(v: string) => v.length > 0 || 'Field is required'],
     },
-    {
-        label: "Replication Method",
-        type: "text",
-        name: "method",
-        required: true,
-        rules: [(v: string) => v.length > 0 || 'Field is required'],
-        options: [{ value: "Xmin", title: "Xmin" }]
-    }
 ];
+
 
 onMounted(async () => {
 
@@ -118,55 +105,57 @@ onMounted(async () => {
 
 
 async function submit(ev: SubmitEventPromise) {
+    showMessage.value = false;
     const validation = await ev;
     if (!validation.valid) return;
 
-    loading.value = true;
-
     try {
+        loading.value = true;
         const body = {
-            "name": vmPostgres.value.name,
-            "configuration": {
-                "sourceType": "postgres",
-                "replication_method": {
-                    "method": vmPostgres.value.method
-                },
-                "ssl_mode": {
-                    "mode": "require"
-                },
-                "host": vmPostgres.value.host,
-                "port": vmPostgres.value.port,
-                "database": vmPostgres.value.database,
-                "schemas": [
-                    "information_schema", "pg_catalog"
-                ],
-                "username": vmPostgres.value.username,
-                "password": vmPostgres.value.password
-            }
+            "host": vmForm.value.host,
+            "port": vmForm.value.port,
+            "database": vmForm.value.database,
+            "username": vmForm.value.username,
+            "password": vmForm.value.password
         };
-        console.log("Creating Source: ", body);
-        const res = await $fetch('/api/airbyte/v1/sources', {
+
+        const res = await $fetch('/api/schema/postgres/fetch', {
             method: 'POST',
             credentials: 'include',
             body: body
         });
+        console.log("Fetch Response: ", res);
         if (res.error) {
-            message.value = "Failed to create data source: " + res.error.message;
+            message.value = "Failed to fetch schema: " + res.error.message;
             showMessage.value = true;
             return;
         }
+        if (!md.connInfo || !md.db) throw Error("Motherduck not initialized");
 
-        message.value = "Created";
-        showMessage.value = true;
-        emit('created', (res.data as any)?.data);
+        const data = (res.data as any).data.map((s: any) => ({
+            catalog_name: _.isEmpty(vmForm.value.name) ? vmForm.value.database : vmForm.value.name,
+            database_name: s.database_name,
+            schema_name: s.schema_name,
+            table_name: s.table_name,
+            column_name: s.column_name,
+            data_type: s.data_type,
+            comment: s.comment,
+            comment_approved: null,
+        }) as Omit<SchemaField, 'created_at'>);
+
+        console.log("Data: ", data);
+
+        await md.updateColumnMetadata(md.connInfo.database, md.connInfo.schema, data);
+        return emit("created");
     }
     catch (err) {
         console.log("Error: ", err);
+        message.value = "Error: " + err;
+        showMessage.value = true;
     }
     finally {
         loading.value = false;
     }
-
 }
 
 </script>

@@ -4,7 +4,7 @@
 
 
 // export const fs = fSys.promises;
-let dir: FileSystemDirectoryHandle = null;
+let dir: FileSystemDirectoryHandle | null = null;
 
 export async function configure() {
     dir = await window.navigator.storage.getDirectory();
@@ -23,7 +23,7 @@ export async function setKey(key: string, value: string) {
 }
 
 export async function getKey(key: string) {
-
+    if (!dir) throw Error("Not configured");
     const keyval = await dir.getDirectoryHandle('keyval', { create: true });
     const file = await keyval.getFileHandle(key, { create: false });
     const text = (await file.getFile()).text();

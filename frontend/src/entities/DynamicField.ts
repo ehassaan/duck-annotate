@@ -1,6 +1,4 @@
 
-
-
 export interface DynamicField {
     name: string;
     label: string;
@@ -8,4 +6,5 @@ export interface DynamicField {
     required?: boolean;
     rules?: ((v: any) => boolean | string)[];
     options?: { title: string; value: any; }[];
+    placeholder?: string | (() => string);
 }

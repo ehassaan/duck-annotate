@@ -19,21 +19,21 @@
                 <v-tooltip text="Update and approve">
                     <template v-slot:activator="{ props }">
                         <v-btn v-bind="props" icon="mdi-check-all"
-                            :color="item.comment_approved === true ? 'green' : undefined" size="x-small"
+                            :color="item.comment_approved === true ? '#0d0' : undefined" size="x-small"
                             @click="() => action(item, true)"></v-btn>
                     </template>
                 </v-tooltip>
-                <v-tooltip text="Update without approval">
+                <v-tooltip text="Update as unapproved">
                     <template v-slot:activator="{ props }">
                         <v-btn v-bind="props" icon="mdi-check" size="x-small"
-                            :color="_.isNull(item.comment_approved) ? 'primary' : undefined"
+                            :color="_.isNull(item.comment_approved) ? '#44f' : undefined"
                             @click="() => action(item, null)"></v-btn>
                     </template>
                 </v-tooltip>
                 <v-tooltip text="Reject and keep existing description">
                     <template v-slot:activator="{ props }">
                         <v-btn v-bind="props" icon="mdi-close" size="x-small"
-                            :color="item.comment_approved === false ? 'red' : undefined"
+                            :color="item.comment_approved === false ? '#d33' : undefined"
                             @click="() => action(item, false)"></v-btn>
                     </template>
                 </v-tooltip>
@@ -61,23 +61,10 @@ import * as storage from "@/utils/storageUtil";
 import * as md from "@/services/motherduck";
 import * as llm from "@/utils/llmUtil";
 import _ from 'lodash';
+import type { SchemaField } from '@/entities/SchemaField';
 
-const props = defineProps({
-    token: {
-        type: String,
-        required: false
-    },
-    database: {
-        type: String,
-        default: "main"
-    },
-    schema: {
-        type: String,
-        default: "main"
-    }
-});
 
-type TableColumn = md.ColumnInfo & { new_comment?: string; is_modified: boolean; is_generated: boolean; };
+type TableColumn = SchemaField & { new_comment?: string; is_modified: boolean; is_generated: boolean; };
 
 const message = ref("");
 const columns = ref<TableColumn[]>([]);
@@ -125,13 +112,11 @@ const headers = ref([
 ]);
 
 onMounted(async () => {
-    if (!props.token) {
-        return;
-    }
     isLoadingTblSelect.value = true;
     try {
         await connect();
-        tables.value = await md.fetchTables(props.database, props.schema);
+        if (!md.connInfo || !md.db) throw Error("Motherduck not initialized");
+        tables.value = await md.fetchSchemaTables(md.connInfo.database, md.connInfo.schema);
         const config = await storage.getKey("engine");
         engine = embed.deserializeEngine(config);
     }
@@ -145,14 +130,11 @@ onMounted(async () => {
 });
 
 async function connect() {
-    if (!props.token) {
-        message.value = "Error: Please connect Motherduck first";
-        return;
-    }
     message.value = "Connecting...";
-
     try {
-        await md.connect(props.token);
+        if (!md.connInfo || !md.db) throw Error("Motherduck not initialized");
+
+        await md.connect(md.connInfo.token);
     } catch (err) {
         console.log('query failed', err);
         message.value = `Connection Failed: ${err}`;
@@ -167,7 +149,8 @@ async function fetchTableSchema() {
     }
     isLoadingTable.value = true;
     try {
-        columns.value = (await md.fetchColumnMetadata(props.database, props.schema, table.value))
+        if (!md.connInfo || !md.db) throw Error("Motherduck not initialized");
+        columns.value = (await md.fetchColumnMetadata(md.connInfo.database, md.connInfo.schema, table.value))
             .map(c => ({ ...c, is_modified: false, is_generated: false }));
     }
     catch (err) {
@@ -224,14 +207,20 @@ function action(item: TableColumn, accept: boolean | null) {
 }
 
 async function saveChanges() {
-    const data = [];
+    const data: SchemaField[] = [];
     isLoadingSave.value = true;
 
+    if (!md.connInfo) {
+        message.value = "Motherduck is not initialized";
+        isMessage.value = true;
+        return;
+    }
+
     for (const c of columns.value) {
-        let comment = "";
+        let comment: string | null = "";
         if (!c.is_generated) {
             if (c.is_modified) {
-                comment = c.new_comment && !_.isEmpty(c.new_comment) ? c.new_comment : c.comment;
+                comment = c.new_comment && !_.isEmpty(c.new_comment) ? c.new_comment as any : c.comment;
             }
             else {
                 continue;
@@ -246,11 +235,13 @@ async function saveChanges() {
             }
         }
         data.push({
-            database_name: props.database,
-            schema_name: props.schema,
+            catalog_name: c.catalog_name,
+            database_name: md.connInfo.database,
+            schema_name: md.connInfo.schema,
             table_name: table.value,
             column_name: c.column_name,
             comment: comment,
+            data_type: c.data_type,
             comment_approved: c.comment_approved,
         });
     }
@@ -263,7 +254,7 @@ async function saveChanges() {
             return;
         }
 
-        await md.updateColumnMetadata(props.database, props.schema, data);
+        await md.updateColumnMetadata(md.connInfo.database, md.connInfo.schema, data);
         for (const c of columns.value) {
             const item = data.find(col => col.column_name === c.column_name);
             if (item) {

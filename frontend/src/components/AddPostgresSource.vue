@@ -150,7 +150,7 @@ async function submit(ev: SubmitEventPromise) {
                 "port": vmPostgres.value.port,
                 "database": vmPostgres.value.database,
                 "schemas": [
-                    "information_schema", "pg_catalog"
+                    "public"
                 ],
                 "username": vmPostgres.value.username,
                 "password": vmPostgres.value.password

@@ -35,7 +35,7 @@
             <v-window-item value="schema" class="fill-height" color="secondary">
                 <v-card :class="$style.window_card" color="secondary" :elevation="10">
                     <v-card-title>Fetch Database Schema</v-card-title>
-                    <FetchSchema></FetchSchema>
+                    <ManageSchema></ManageSchema>
                 </v-card>
             </v-window-item>
 
@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 
-import { onMounted, ref } from 'vue';
+import { onBeforeMount, onMounted, ref } from 'vue';
 import ConnectMotherduck from './ConnectMotherduck.vue';
 import ConnectRepository from './ConnectRepository.vue';
 import AnnotateTables from './AnnotateTables.vue';
@@ -76,17 +76,19 @@ import ManageSources from './ManageSources.vue';
 import * as md from "@/services/motherduck";
 import ManageInfoSources from './ManageInfoSources.vue';
 import FetchSchema from './FetchSchema.vue';
+import ManageSchema from './ManageSchema.vue';
 
 const tab = ref("datasource");
 const vmConnInfo = ref<{ database: string, token: string; schema: string; destinationId: string; }>();
 
-onMounted(async () => {
+onBeforeMount(async () => {
     try {
         const conStr = localStorage.getItem("motherduck");
         if (conStr) {
             const connInfo = JSON.parse(conStr);
             vmConnInfo.value = connInfo;
             md.setCreds(connInfo);
+            md.connect(connInfo.token);
         }
     }
     catch (err) {
@@ -116,8 +118,7 @@ async function disconnect() {
     height: 100%;
 }
 
-.window {
-}
+.window {}
 
 .title {
     font-weight: normal;

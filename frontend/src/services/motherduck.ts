@@ -1,4 +1,5 @@
 
+import type { SchemaField } from '@/entities/SchemaField';
 import { MDConnection } from "@motherduck/wasm-client";
 import _ from "lodash";
 import { escape } from 'sqlstring';
@@ -21,14 +22,12 @@ export function setCreds(creds: MDCreds) {
 }
 
 export async function connect(token: string) {
-    const connection = MDConnection.create({
+    db = MDConnection.create({
         mdToken: token,
     });
-    if (!await connection.isInitialized()) {
+    if (!await db.isInitialized()) {
         throw new Error('Failed to initialize connection');
     }
-    db = connection;
-    connInfo = connInfo;
 }
 
 export async function disconnect() {
@@ -63,47 +62,12 @@ export async function fetchTables(database: string, schema: string) {
     return tables;
 }
 
-export interface ColumnInfo {
-    column_name: string;
-    data_type: string;
-    comment: string;
-    comment_approved: boolean | null;
-    created_at: Date;
-}
-
-export async function fetchColumnMetadata(database: string, schema: string, table: string) {
+export async function fetchSchemaTables(database: string, schema: string) {
     if (!db) throw Error("Database is not initialized");
-    console.log("Fetching columns for", database, schema, table);
-    const columnRes = await db.evaluateQuery(`
-        select info.column_name, 
-        info.data_type,
-        cmeta.comment as comment,
-        cmeta.comment_approved as comment_approved,
-        cmeta.created_at as created_at
-        from duckdb_columns() info
-        left join 
-            (select *, 
-                row_number() over (
-                partition by 
-                    database_name,
-                    table_name,
-                    column_name,
-                    schema_name 
-                order by created_at desc) 
-                as _rn
-            from "${database}"."${schema}".column_metadata
-            ) cmeta
-            on cmeta.table_name = info.table_name 
-                AND cmeta.column_name = info.column_name 
-                AND cmeta.schema_name = info.schema_name 
-                AND cmeta.database_name = info.database_name
-                AND _rn=1
-        where info.database_name='${database}' and info.schema_name='${schema}' and info.table_name='${table}'
-        order by info.column_index;
-        `);
-    //, [database, schema, table]);
-    const columns = columnRes.data.toRows().map(r => ({ ...r } as unknown as ColumnInfo));
-    return columns;
+    const tableRes = await db.evaluateQuery(`select distinct table_name from "${database}"."${schema}".column_metadata`);
+    console.log('query result', tableRes);
+    const tables = tableRes.data.toRows().map((r: any) => r.table_name) as string[];
+    return tables;
 }
 
 function clean(value: any) {
@@ -123,13 +87,7 @@ export async function insertData(database: string, schema: string, table: string
     const result = await db.evaluateQuery(query);
 }
 
-export async function updateColumnMetadata(database: string, schema: string, data: {
-    schema_name: string,
-    table_name: string,
-    column_name: string,
-    comment: string,
-    comment_approved: boolean | null,
-}[]) {
+export async function updateColumnMetadata(database: string, schema: string, data: SchemaField[]) {
     if (!db) throw Error("Database is not initialized");
 
     await db.evaluateQuery(`USE "${database}"."${schema}"`);
@@ -137,12 +95,14 @@ export async function updateColumnMetadata(database: string, schema: string, dat
     await db.evaluateQuery(`CREATE SEQUENCE IF NOT EXISTS '_dl_column_metadata_id_seq';`);
 
     await db.evaluateQuery(`
-        CREATE TABLE IF NOT EXISTS "${database}"."${schema}"."column_metadata" ( 
+        CREATE TABLE IF NOT EXISTS "${database}"."${schema}"."column_metadata" (
         id INTEGER NOT NULL PRIMARY KEY DEFAULT nextval('"${schema}"._dl_column_metadata_id_seq'),
+        catalog_name TEXT NOT NULL,
         database_name TEXT NOT NULL,
         schema_name TEXT NOT NULL,
         table_name TEXT NOT NULL,
         column_name TEXT NOT NULL,
+        data_type TEXT NOT NULL,
         comment TEXT,
         comment_approved BOOLEAN,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
@@ -150,6 +110,32 @@ export async function updateColumnMetadata(database: string, schema: string, dat
 
     await insertData(database, schema, 'column_metadata', data);
 }
+
+export async function fetchColumnMetadata(database: string, schema: string, table?: string) {
+    if (!db) throw Error("Database is not initialized");
+    console.log("Fetching columns for", database, schema, table);
+    const query = `
+        SELECT * FROM (SELECT *, 
+                row_number() over (
+                partition by 
+                    catalog_name,
+                    schema_name,
+                    table_name,
+                    column_name
+                ORDER BY created_at desc) 
+                as _rn
+            FROM "${database}"."${schema}".column_metadata
+            ) info
+        WHERE _rn=1 ${table ? `AND info.table_name='${table}'` : ''}
+        ORDER BY info.column_name;
+        `;
+    console.debug("Running query: ", query);
+    const columnRes = await db.evaluateQuery(query);
+    const columns = columnRes.data.toRows().map(r => ({ ...r } as unknown as SchemaField));
+    console.log("Res: ", columns);
+    return columns;
+}
+
 
 export async function loadInformationSource(database: string, schema: string, source_id: string, data: {
     source_id: string,
