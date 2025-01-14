@@ -4,7 +4,7 @@ export interface EmbeddingChunk {
     source_type: string,
     title: string;
     description: string;
-    vector_embedding?: float[];
+    vector_embedding?: number[];
     created_at?: Date;
 }
 

@@ -1,4 +1,4 @@
-# Duck Annotate
+# Duck Annotate (Airbyte - Motherduck Hackathon)
 
 Duck Annotate is a data annotation tool that uses Airbyte to pull data from different sources and then generates column and table metadata for your Motherduck data lake.
 
@@ -23,6 +23,8 @@ Currently only the python language is supported by Duck Annotate. But support fo
 
 ## Vector Embeddings and AI
 
+Motherduck `embedding` and `prompt` commands are used to generate embeddings. Motherduck uses Open AI text-embedding-3-small and gpt-4o-mini by default. Cohere API was also tested but using Motherduck LLM features integrate seamlessly with overall solution.
+
 ## Human Verification and Collaboration
 
 Duck Annotate stores all the metadata and verification status within Motherduck, so it allows multiple data stewards having access to same Motherduck database to work collaboratively.
@@ -44,11 +46,18 @@ Duck Annotate gets inspiration from shift left approach to data governance. The 
 ## Code Structure
 - ./frontend/ - Frontend code (Vuejs)
 - ./backend/ - Backend code (Bun + ElyziaJs)
+- ./.github/ - CI/CD pipelines to build and deploy
 
 ## API Docs
 - Backend (Open API / Swagger)
 - Auth (Open API / Swagger)
 
+## Deployment
+
+- Frontend is deployed on Github pages
+- Backend is deployed on Azure Websites
+- Backend database is Postgres Neon
+- Motherduck and Airbyte trial accounts were used for this hackathon.
 
 # Demo
 
@@ -65,6 +74,3 @@ To demonstrate the functionality of Duck Annotate, I have chosen Odoo as a sourc
 1. Odoo Git repository
 2. Odoo existing table metadata
 3. Github issues and wikis
-
-## End Result
-

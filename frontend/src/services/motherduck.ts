@@ -228,8 +228,8 @@ export async function completion(prompt: string) {
         return JSON.parse(_.trim(data[0].replace('```json', '```'), " \n`"));
     }
     else {
-        console.error("Failed to parse Cohere response: ", response);
-        throw new Error('Failed to parse Cohere response');
+        console.error("Failed to parse LLM response: ", data);
+        throw new Error('Failed to parse LLM response');
     }
 }
 
