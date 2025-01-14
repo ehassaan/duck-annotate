@@ -28,8 +28,8 @@ export async function completion(prompt: string) {
         console.error("Failed to parse Cohere response: ", response);
         throw new Error('Failed to parse Cohere response');
     }
-    return response;
 }
+
 
 const responseSchema = {
     type: 'object',

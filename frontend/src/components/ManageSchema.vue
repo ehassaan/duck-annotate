@@ -1,7 +1,7 @@
 <template>
     <VProgressCircular :class="$style.loading" indeterminate v-if="loading"></VProgressCircular>
 
-    <v-list v-model:opened="open" v-if="schema.length && schema.length > 0 && !addingSource">
+    <v-list :class="$style.list" v-model:opened="open" v-if="schema.length && schema.length > 0 && !addingSource">
 
         <v-list-group v-for="[db, schemas] in Object.entries(schemaGraph)" :key="db" :title="db" :value="db">
 
@@ -134,8 +134,9 @@ function onCreateNew() {
 }
 
 .list {
-    background-color: rgb(var(--theme-color-secondary));
-    color: black;
+    /* background-color: rgb(var(--theme-color-secondary));
+    color: black; */
+    max-height: 60vh;
 }
 
 .listitem {

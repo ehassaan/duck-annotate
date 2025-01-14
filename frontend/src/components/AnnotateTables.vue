@@ -90,13 +90,13 @@ const headers = ref([
         sortable: true,
         key: 'data_type',
         // width: "100px",
-        maxWidth: "150px"
+        maxWidth: "100px"
     },
     {
         title: 'Existing Description',
         sortable: true,
         key: 'comment',
-        // minWidth: "auto"
+        maxWidth: "250px"
     },
     {
         title: 'New Description',
@@ -107,6 +107,7 @@ const headers = ref([
         title: 'Accept',
         sortable: false,
         key: 'accept',
+        minWidth: "130px"
     },
 
 ]);
@@ -168,10 +169,17 @@ async function generateAnnotations() {
 
     try {
         const text = columns.value.map(c => c.column_name).join("\n");
-        const matches = await fetchSimilar(`${table.value} - model - ${text}`);
-        const prompt = await preparePrompt(matches);
+        const matches = await fetchSimilarMd(`${table.value} - model - ${text}`);
+        console.debug("Similarity matches: ", matches);
+        const prompt = await preparePrompt(matches.map(m =>
+        ({
+            type: m.source_type,
+            title: m.title,
+            body: m.description
+        })
+        ));
         console.log("Prompt: ", prompt);
-        const response = await llm.completion(prompt);
+        const response = await md.completion(prompt);
         console.log("LLM Response: ", response);
         table_desc.value = response.table_description;
         for (const column of response.columns) {
@@ -180,6 +188,7 @@ async function generateAnnotations() {
                     c.new_comment = column.column_description;
                     c.is_modified = false;
                     c.comment_approved = null;
+                    c.is_generated = true;
                 }
             }
         }
@@ -196,6 +205,14 @@ async function generateAnnotations() {
 
 async function fetchSimilar(text: string) {
     const results = embed.search(engine, text);
+    console.log("Matches: ", results);
+    return results;
+}
+
+async function fetchSimilarMd(text: string) {
+    if (!md.db || !md.connInfo) throw Error("Motherduck not initialized");
+
+    const results = await md.similaritySearch(text, md.connInfo.database, md.connInfo.schema, 10);
     console.log("Matches: ", results);
     return results;
 }
@@ -236,9 +253,9 @@ async function saveChanges() {
         }
         data.push({
             catalog_name: c.catalog_name,
-            database_name: md.connInfo.database,
-            schema_name: md.connInfo.schema,
-            table_name: table.value,
+            database_name: c.database_name,
+            schema_name: c.schema_name,
+            table_name: c.table_name,
             column_name: c.column_name,
             comment: comment,
             data_type: c.data_type,
@@ -278,7 +295,7 @@ async function saveChanges() {
     }
 }
 
-async function preparePrompt(matches: embed.SimilarityMatch[]) {
+async function preparePrompt(matches: { type: string, title: string, body: string; }[]) {
     const colPrompt = columns.value.map(c => `${c.column_name}: ${c.data_type}`).join("\n");
     let actionPrompt = `## Instructions: \nPlease write 1-2 lines of description for the table named '${table.value}' and description for each of its column. Use the relevant source code to generate the descriptions. The columns are given below:\n\n${colPrompt}`;
     const outputFormat = "## Output Format:\nWrite the results in JSON format consisting of fields 'table_description' (string) and 'columns'. columns field should be an array with fields 'column_name' and 'column_description'";
@@ -296,7 +313,7 @@ async function preparePrompt(matches: embed.SimilarityMatch[]) {
     let contextPrompt = "## Source Code (relevant code from the repository that uses this table):\n\n";
 
     for (const match of matches) {
-        contextPrompt += `# file: ${match.file}\n${match.text}\n\n`;
+        contextPrompt += `# ${match.type} - ${match.title}\n${match.body}\n\n`;
     }
 
     const prompt = `${actionPrompt}\n\n${contextPrompt}\n\n${outputFormat}\n\n${exampleOutput}`;
@@ -335,6 +352,8 @@ async function preparePrompt(matches: embed.SimilarityMatch[]) {
 .table_description {
     flex: 1;
     margin-left: 12px;
+    display: block;
+    text-wrap: wrap;
 }
 
 .editable_field {
@@ -343,6 +362,7 @@ async function preparePrompt(matches: embed.SimilarityMatch[]) {
     width: 100%;
     flex-grow: 1 0 auto;
     border: 1px solid #ccc;
+    color: white;
 }
 
 .table_field {
@@ -351,6 +371,7 @@ async function preparePrompt(matches: embed.SimilarityMatch[]) {
     width: auto;
     flex-grow: 0;
     white-space: nowrap;
+    color: white;
 }
 
 .bottom_toolbar {

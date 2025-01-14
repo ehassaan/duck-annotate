@@ -1,4 +1,5 @@
 
+import type { EmbeddingChunk, EmbeddingStatus } from '@/entities/embedding';
 import type { SchemaField } from '@/entities/SchemaField';
 import { MDConnection } from "@motherduck/wasm-client";
 import _ from "lodash";
@@ -32,6 +33,7 @@ export async function connect(token: string) {
 
 export async function disconnect() {
     await db?.close();
+    connInfo = null;
 }
 
 export async function createSchema(database: string, name: string, ignoreIfExist: boolean) {
@@ -137,12 +139,9 @@ export async function fetchColumnMetadata(database: string, schema: string, tabl
 }
 
 
-export async function loadInformationSource(database: string, schema: string, source_id: string, data: {
-    source_id: string,
-    source_type: string,
-    title: string;
-    description: string;
-}[]) {
+
+
+export async function loadInformationSource(database: string, schema: string, source_id: string, data: EmbeddingChunk[]) {
     if (!db) throw Error("Database is not initialized");
 
     const query = `
@@ -181,14 +180,6 @@ export async function generateEmbeddings(database: string, schema: string, sourc
 }
 
 
-export interface EmbeddingStatus {
-    source_id: string;
-    embeddings_generated: number;
-    embeddings_missing: number;
-    total_chunks: number;
-    source_type: string;
-}
-
 export async function checkEmbeddingStatus(database: string, schema: string) {
     if (!db) throw Error("Database is not initialized");
     const query = `
@@ -205,3 +196,40 @@ export async function checkEmbeddingStatus(database: string, schema: string) {
     const res = await db.evaluateQuery(query);
     return res.data.toRows() as any as EmbeddingStatus[];
 }
+
+
+export async function similaritySearch(text: string, database: string, schema: string, maxItems = 10) {
+
+    if (!db || !connInfo) throw Error("Database is not initialized");
+
+    const query = `
+        SELECT *,
+        array_cosine_similarity(embedding(E${escape(text)}), "vector_embedding") as score 
+        FROM "${database}"."${schema}".information_sources 
+        ORDER BY score DESC
+        LIMIT ${maxItems}
+    `;
+    console.debug("Running query: ", query);
+    const res = await db.evaluateQuery(query);
+    return res.data.toRows() as any as (EmbeddingChunk & { score: number; })[];
+}
+
+
+export async function completion(prompt: string) {
+
+    if (!db || !connInfo) throw Error("Database is not initialized");
+
+    const query = `SELECT prompt(E${escape(prompt)}) as data;`;
+    console.debug("Running query: ", query);
+    const res = await db.evaluateQuery(query);
+    const data = res.data.toRows().map((r: any) => r.data) as string[];
+    if (data && data.length > 0) {
+        console.log(data[0]);
+        return JSON.parse(_.trim(data[0].replace('```json', '```'), " \n`"));
+    }
+    else {
+        console.error("Failed to parse Cohere response: ", response);
+        throw new Error('Failed to parse Cohere response');
+    }
+}
+
