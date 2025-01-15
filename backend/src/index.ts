@@ -18,6 +18,7 @@ let app = new Elysia()
   .use(cors({
     origin: [`${frontend_base_url?.protocol}//${frontend_base_url?.host}`],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true
   }))
   .group("/api", app => app
     .use(authPlugin)

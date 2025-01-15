@@ -6,6 +6,9 @@
     <v-app-bar-title>
       <Logo></Logo>
     </v-app-bar-title>
+    <template v-slot:append>
+      <v-btn icon="mdi-logout" :loading="isLoading" @click="logout"></v-btn>
+    </template>
   </v-app-bar>
 
   <v-navigation-drawer v-model="drawer" :location="$vuetify.display.mobile ? 'bottom' : undefined">
@@ -26,16 +29,37 @@
 </template>
 <script setup lang="ts">
 import Logo from '@/components/Logo.vue';
+import { authClient } from '@/services/auth';
 import { ref, type PropType } from 'vue';
-
+import { useRouter } from 'vue-router';
 
 const drawer = ref(false);
+const router = useRouter();
+const isLoading = ref(false);
+
 const props = defineProps({
   items: {
     type: Array as PropType<{ label: string, icon: string, link: string; }[]>,
     required: true
   },
 });
+
+async function logout() {
+  isLoading.value = true;
+  try {
+    console.log("Logout");
+    await authClient.signOut();
+    await router.replace('/login');
+  }
+  catch (err) {
+    console.error("Error logging out: ", err);
+  }
+  finally {
+    isLoading.value = false;
+  }
+
+}
+
 </script>
 
 <style>
