@@ -34,8 +34,7 @@
 
     </v-list>
 
-    <v-btn v-if="!addingSource" :class="$style.button" color="primary" @click="() => addingSource = true">Add
-        New</v-btn>
+    <v-btn v-if="!addingSource" :class="$style.button" color="primary" @click="() => addingSource = true">Load Postgres Schema</v-btn>
 
     <FetchSchema @created="onCreateNew" @cancel="() => addingSource = false" v-if="addingSource"></FetchSchema>
 

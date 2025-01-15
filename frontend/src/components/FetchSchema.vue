@@ -33,22 +33,13 @@ const showMessage = ref(false);
 const loading = ref(false);
 const isMd = computed(() => md.connInfo != null);
 
-// const vmForm = ref({
-//     name: "",
-//     host: "",
-//     port: 5432,
-//     database: "",
-//     username: "",
-//     password: "",
-// });
-
 const vmForm = ref({
     name: "MyDataSource",
-    host: "ep-damp-mountain-a5dm3p26.us-east-2.aws.neon.tech",
+    host: "",
     port: 5432,
-    database: "backend",
-    username: "backend_owner",
-    password: "Wj0ZtghJ4MIK",
+    database: "",
+    username: "",
+    password: "",
 });
 
 

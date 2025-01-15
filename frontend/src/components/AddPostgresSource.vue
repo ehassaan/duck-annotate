@@ -31,26 +31,15 @@ const showMessage = ref(false);
 const loading = ref(false);
 const destinationId = computed(() => md.connInfo?.destinationId);
 
-// const vmPostgres = ref({
-//     name: "MyDataSource",
-//     host: "",
-//     port: 5432,
-//     database: "",
-//     username: "",
-//     password: "",
-//     schema: "public",
-//     method: "Xmin"
-// });
-
 const vmPostgres = ref({
-    target: "$annotate",
+    target: "main",
     name: "MyDataSource",
-    host: "ep-damp-mountain-a5dm3p26.us-east-2.aws.neon.tech",
+    host: "",
     port: 5432,
-    database: "backend",
-    username: "backend_owner",
-    password: "Wj0ZtghJ4MIK",
-    // schema: "public",
+    database: "",
+    username: "",
+    password: "",
+    schema: "public",
     method: "Xmin"
 });
 
