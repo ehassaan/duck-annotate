@@ -6,10 +6,10 @@
         <v-btn v-if="destinationId" :class="$style.button" type="button" @click="disconnect" block
             color="primary">Disconnect</v-btn>
 
-        <v-text-field type="password" density="default" :class="$style.field" v-if="!destinationId && !loading" required
+        <v-text-field type="password" density="default" :class="$style.field" v-if="!destinationId && !loadingConnect" required
             v-model="vmToken" label="Token"></v-text-field>
 
-        <v-btn v-if="!destinationId" :loading="loading" :class="$style.button" type="button" @click="connect" block
+        <v-btn v-if="!destinationId" :loading="loadingConnect" :class="$style.button" type="button" @click="connect" block
             color="primary">Connect</v-btn>
 
         <v-select density="default" v-model="vmDatabase" :class="$style.field" :items="databases"
@@ -24,7 +24,7 @@
         <v-select density="compact" v-if="!vmIsAllTables" :class="$style.field" v-model="vmSelectedTables"
             :loading="loadingTables" :items="tables" multiple label="Select Tables to Annotate"></v-select> -->
 
-        <v-btn :class="$style.button" :loading="loading" type="button" @click="submit" block
+        <v-btn :class="$style.button" :loading="loadingConnect" type="button" @click="submit" block
             color="primary">Save</v-btn>
 
     </v-form>
@@ -42,7 +42,8 @@ const vmToken = ref("");
 const vmSchema = ref<string>("duck_annotate");
 const vmDatabase = ref("");
 const message = ref("");
-const loading = ref(false);
+const loadingConnect = ref(false);
+const loadingSave = ref(false);
 const loadingSchemas = ref(false);
 const databases = ref<string[]>([]);
 const schemas = ref<{ title: string; value: string; }[]>([]);
@@ -54,14 +55,12 @@ let destinationId = ref<string>();
 
 onMounted(async () => {
     try {
-        const conStr = localStorage.getItem("motherduck");
-        if (conStr) {
-            const connInfo = JSON.parse(conStr);
-            vmToken.value = connInfo.token;
-            vmDatabase.value = connInfo.database;
-            vmSchema.value = connInfo.schema;
-            destinationId.value = connInfo.destinationId;
-            await connect(connInfo);
+        if (md.connInfo) {
+            vmToken.value = md.connInfo.token;
+            vmDatabase.value = md.connInfo.database;
+            vmSchema.value = md.connInfo.schema;
+            destinationId.value = md.connInfo.destinationId;
+            await connect(md.connInfo);
             await fetchSchemas();
             // await fetchTables(connInfo.schema);
         }
@@ -73,7 +72,7 @@ onMounted(async () => {
 
 
 async function disconnect() {
-    loading.value = true;
+    loadingConnect.value = true;
     try {
         let res = await $fetch('/api/airbyte/v1/destinations/' + destinationId.value,
             {
@@ -90,7 +89,7 @@ async function disconnect() {
 
     }
     finally {
-        loading.value = false;
+        loadingConnect.value = false;
     }
 
 }
@@ -101,13 +100,12 @@ async function connect(connInfo: any) {
         return;
     }
     message.value = "Connecting...";
-    loading.value = true;
+    loadingConnect.value = true;
 
     try {
         await md.connect(vmToken.value);
         const dbRes = await md.fetchDatabases();
         message.value = `Connection Successful. ${dbRes.length} databases found.`;
-        md.setCreds(connInfo);
         databases.value = dbRes;
     } catch (err) {
         console.log('query failed', err);
@@ -115,7 +113,7 @@ async function connect(connInfo: any) {
         return;
     }
     finally {
-        loading.value = false;
+        loadingConnect.value = false;
     }
 }
 
@@ -159,7 +157,7 @@ async function submit() {
     // else {
     //     tableList = { ...vmSelectedTables.value };
     // }
-    loading.value = true;
+    loadingSave.value = true;
     const connValues = {
         database: vmDatabase.value, token: vmToken.value, schema: vmSchema.value,
         // tables: tableList
@@ -227,7 +225,7 @@ async function submit() {
         message.value = 'Error: ' + err;
     }
     finally {
-        loading.value = false;
+        loadingSave.value = false;
     }
 
 }

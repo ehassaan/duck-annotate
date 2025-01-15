@@ -119,8 +119,9 @@ async function refreshSources() {
     console.log("Schema: ", schema.value, schemaGraph.value);
 }
 
-function onCreateNew() {
+async function onCreateNew() {
     addingSource.value = false;
+    await fetchSources();
 }
 
 </script>

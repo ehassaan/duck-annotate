@@ -10,10 +10,10 @@
                 Fetch Database Schema
             </v-tab>
             <v-tab value="pull_data">
-                Configure Information Sources
+                Replicate Reference Data
             </v-tab>
             <v-tab value="information">
-                Select Information Sources
+                Prepare LLM Context
             </v-tab>
             <v-tab value="annotate">
                 Annotate
@@ -41,7 +41,7 @@
 
             <v-window-item value="pull_data" class="fill-height" color="secondary">
                 <v-card :class="$style.window_card" color="secondary" :elevation="10">
-                    <v-card-title>Configure Information Sources</v-card-title>
+                    <v-card-title>Pull Github Issues</v-card-title>
                     <ManageInfoSources></ManageInfoSources>
                 </v-card>
             </v-window-item>
@@ -49,7 +49,7 @@
 
             <v-window-item value="information">
                 <v-card :class="$style.window_card" color="secondary" :elevation="10">
-                    <v-card-title>Select Relevant Sources</v-card-title>
+                    <v-card-title>Available Embeddings</v-card-title>
                     <ConnectRepository @submit="saveCreds"></ConnectRepository>
                 </v-card>
             </v-window-item>
@@ -98,7 +98,7 @@ onBeforeMount(async () => {
 
 async function saveCreds(data: any) {
     localStorage.setItem("motherduck", JSON.stringify(data));
-    tab.value = "information";
+    tab.value = "schema";
 }
 
 async function disconnect() {

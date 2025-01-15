@@ -118,8 +118,8 @@ onMounted(async () => {
         await connect();
         if (!md.connInfo || !md.db) throw Error("Motherduck not initialized");
         tables.value = await md.fetchSchemaTables(md.connInfo.database, md.connInfo.schema);
-        const config = await storage.getKey("engine");
-        engine = embed.deserializeEngine(config);
+        // const config = await storage.getKey("engine");
+        // engine = embed.deserializeEngine(config);
     }
     catch (err) {
         console.log('query failed', err);
