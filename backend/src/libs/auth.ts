@@ -28,9 +28,9 @@ export const auth = betterAuth({
     },
     advanced: {
         generateId: false,
-        crossSubDomainCookies: {
-            enabled: true,
-        }
+        defaultCookieAttributes: {
+            domain: frontend_base_url?.host
+        },
     },
     databaseHooks: {
         user: {
