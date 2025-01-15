@@ -5,7 +5,7 @@ import _ from "lodash";
 
 export async function completion(prompt: string) {
     const cohere = new CohereClientV2({
-        token: import.meta.env.VITE_COHERE_API_KEY,
+        token: import.meta.env.VITE_COHERE_API_KEY,  // Cohere used for dev/test
     });
     const response = await cohere.chat({
         model: 'command-r-plus',

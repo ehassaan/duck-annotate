@@ -99,14 +99,13 @@ const isLoading = ref(false);
 const isLoadingSocial = ref(false);
 const router = useRouter();
 
-const base_url = import.meta.env.BASE_URL;
 
 onMounted(async () => {
     try {
         const session = await authClient.getSession();
         if (!session.error && session.data) {
             console.log("Session: ", session);
-            router.replace(base_url);
+            router.replace("/");
         }
     }
     catch (err) {
