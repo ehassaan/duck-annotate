@@ -51,9 +51,9 @@ jobs:
         working-directory: ${{ env.BUILD_PATH }}
       - name: Build
         run: |
-          VITE_BACKEND_URL=https://duck-annotate.azurewebsites.net
-          VITE_BASE_URL=https://ehassaan.github.io/duck-annotate
-          pnpm run build
+          export VITE_BACKEND_URL=https://duck-annotate.azurewebsites.net
+          export VITE_BASE_URL=https://ehassaan.github.io/duck-annotate
+          pnpm run build --base "${{ steps.pages.outputs.base_path }}"
         working-directory: ${{ env.BUILD_PATH }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -1,3 +1,23 @@
+<p align="center">
+  <a href="https://ducklake.io/ducklab" rel="noopener">
+ <img width=200px src="https://raw.githubusercontent.com/ehassaan/duck-annotate/main/frontend/public/logos/dl_dark.png" alt="Project logo"></a>
+</p>
+
+<div align="center">
+
+[![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![License](https://img.shields.io/badge/dynamic/json?label=version&query=version&url=https://raw.githubusercontent.com/ehassaan/duck-annotate/main/frontend/package.json)](https://ehassaan.github.io/duck-annotate)
+[![GitHub Issues](https://img.shields.io/github/issues/ehassaan/duck-annotate.svg)](https://github.com/ehassaan/duck-annotate/issues)
+[![License](https://img.shields.io/badge/dynamic/json?label=license&query=license&url=https://raw.githubusercontent.com/ehassaan/duck-annotate/main/frontend/package.json)](/LICENSE)
+
+</div>
+
+---
+
+<p align="center"> AI Powered Data Annotation Tool for Motherduck | Powered by Airbyte
+    <br> 
+</p>
+
 # Duck Annotate (Airbyte - Motherduck Hackathon)
 
 Duck Annotate is a data annotation tool that uses Airbyte to pull data from different sources and then generates column and table metadata for your Motherduck data lake.
@@ -74,3 +94,12 @@ To demonstrate the functionality of Duck Annotate, I have chosen Odoo as a sourc
 1. Odoo Git repository
 2. Odoo existing table metadata
 3. Github issues and wikis
+
+## Declaraitons
+
+- Codium IDE was used for VS Code intellisence. (~5% of code).
+- I used color pallete and logo from one of my existing projects.
+
+## Contributions
+
+This project is Apache 2.0 licensed. Contributions are most welcome.
