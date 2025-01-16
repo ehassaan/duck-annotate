@@ -18,6 +18,25 @@
     <br> 
 </p>
 
+- [Duck Annotate (Airbyte - Motherduck Hackathon)](#duck-annotate-airbyte---motherduck-hackathon)
+- [How it Works?](#how-it-works)
+  - [Data Extraction](#data-extraction)
+  - [Source Code Scanning](#source-code-scanning)
+  - [Vector Embeddings and AI](#vector-embeddings-and-ai)
+  - [Human Verification and Collaboration](#human-verification-and-collaboration)
+  - [Inspiration](#inspiration)
+- [Technical Details](#technical-details)
+  - [Tech Stack](#tech-stack)
+  - [Code Structure](#code-structure)
+  - [API Docs](#api-docs)
+  - [Deployment](#deployment)
+- [Demo](#demo)
+  - [Dataset](#dataset)
+  - [Information Sources](#information-sources)
+- [Declaraitons](#declaraitons)
+- [Contributions](#contributions)
+
+
 # Duck Annotate (Airbyte - Motherduck Hackathon)
 
 Duck Annotate is a data annotation tool that uses Airbyte to pull data from different sources and then generates column and table metadata for your Motherduck data lake.
@@ -27,11 +46,13 @@ Duck Annotate is a data annotation tool that uses Airbyte to pull data from diff
 3. Scans Github issues and comments.
 4. Generates relevant table and column descriptions for your tables.
 5. Human in the loop approach allows data stewards to verify the generated metadata.
+6. Collaborative environment for multiple users.
 
 # How it Works?
+
 ## Data Extraction
 
-Duck Annotate uses headless Airbyte API to provide a user experience tailored to fetch only the relevant data helpful for annotations. This saves manual effort and costs pulling unnecessary data. Airbyte workspace feature is used to seggregate resources of different users.
+Duck Annotate uses headless Airbyte API to provide a user experience tailored to fetch the relevant data helpful for annotations. This saves manual effort and costs pulling unnecessary data. Airbyte workspace feature is used to seggregate resources for multiple users.
 
 ## Source Code Scanning
 
@@ -54,6 +75,9 @@ Duck Annotate stores all the metadata and verification status within Motherduck,
 Duck Annotate gets inspiration from shift left approach to data governance. The goal is to enable AI powered data governance and early discovery of the datasets by data analysts and data scientists even before the data itself is replicated. This makes it much easier to prioritize data engineering activities and create replication and quality controls on demand.
 
 # Technical Details
+
+<img src="https://github.com/ehassaan/duck-annotate/blob/main/architecture.png?raw=true" width="600">
+
 ## Tech Stack
 
 - Frontend: VueJs, Vuetify
@@ -83,23 +107,23 @@ Duck Annotate gets inspiration from shift left approach to data governance. The 
 
 To demonstrate the functionality of Duck Annotate, I have chosen Odoo as a source.
 
-### Dataset
+## Dataset
 1. 350+ tables related to various modules (HR, CRM, e-commerce etc) and more can be added using add-ons.
 2. Demo data available provided by Odoo for a large number of tables.
 3. Some tables have metadata as well.
 4. Uses postgres <3
 
-### Information Sources
+## Information Sources
 
 1. Odoo Git repository
 2. Odoo existing table metadata
 3. Github issues and wikis
 
-## Declaraitons
+# Declaraitons
 
 - Codium IDE was used for VS Code intellisence. (~5% of code).
-- I used color pallete and logo from one of my existing projects.
+- I used some CSS styles and logo from one of my existing projects.
 
-## Contributions
+# Contributions
 
 This project is Apache 2.0 licensed. Contributions are most welcome.
