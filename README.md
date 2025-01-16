@@ -122,7 +122,7 @@ To demonstrate the functionality of Duck Annotate, I have chosen Odoo as a sourc
 # Declaraitons
 
 - Codium IDE was used for VS Code intellisence. (~5% of code).
-- I used some CSS styles and logo from one of my existing projects.
+- I used a few CSS styles and logo from one of my existing open source projects (~1%).
 
 # Contributions
 
