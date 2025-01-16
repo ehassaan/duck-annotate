@@ -58,8 +58,7 @@
                 :class="$style.button">{{
                     githubToken ? 'Disconnect Github' : 'Login with Github' }}</v-btn>
 
-            <v-text-field v-if="vmProvider !== 'Local'" label="Git URL" v-model="vmRepo"
-                :class="$style.field"></v-text-field>
+            <v-text-field label="Git URL" v-model="vmRepo" :class="$style.field"></v-text-field>
 
         </div>
 
@@ -113,14 +112,7 @@ let githubToken = ref<string>();
 onMounted(async () => {
     loadingList.value = true;
     await md.db?.isInitialized();
-    if (!md.connInfo || !md.db) return;
-    try {
-        vmInfoSources.value = await md.checkEmbeddingStatus(md.connInfo.database, md.connInfo.schema);
-    }
-    catch (err) { }
-    finally {
-        loadingList.value = false;
-    }
+    await refreshStatus();
     setInterval(async () => {
         if (!md.connInfo || !md.db) return;
         try {
@@ -132,6 +124,18 @@ onMounted(async () => {
     }, 30000);
 
 });
+
+async function refreshStatus() {
+    if (!md.connInfo || !md.db) return;
+    loadingList.value = true;
+    try {
+        vmInfoSources.value = await md.checkEmbeddingStatus(md.connInfo.database, md.connInfo.schema);
+    }
+    catch (err) { }
+    finally {
+        loadingList.value = false;
+    }
+}
 
 async function fetchSchemas() {
     loadingSchemas.value = true;
@@ -226,6 +230,7 @@ async function fetchRepos(schema: string) {
         console.log('query result', res);
         if (!res) throw Error("Did not find any repositories data in selected schema");
         vmAllRepos.value = res?.data.toRows() as any;
+        console.log("Repos: ", vmAllRepos.value);
     }
     catch (err) {
         console.log('query failed', err);
@@ -302,7 +307,7 @@ async function scanRepo(dir: FileSystemDirectoryHandle) {
     message.value = `Analyzing ${files.length} files...`;
     const chunks = await getAllChunks(files, 500);
     console.log("Files: ", files, chunks);
-    await saveChunks(`local:${dir.name}`, chunks);
+    await saveChunks(`${vmRepo.value}`, chunks);
 }
 
 async function saveChunks(source_id: string, chunks: Chunk[]) {
@@ -331,6 +336,7 @@ async function generateEmbeddings(item: any) {
         if (!md.connInfo || !md.db) throw Error("Motherduck connection not initialized");
         item.loading = true;
         await md.generateEmbeddings(md.connInfo.database, md.connInfo.schema, item.source_id);
+        await refreshStatus();
     }
     catch (err) {
         console.log("Error: ", err);

@@ -1,12 +1,12 @@
 <p align="center">
-  <a href="https://ducklake.io/ducklab" rel="noopener">
+  <a href="https://annotate.ducklake.io" rel="noopener">
  <img width=200px src="https://raw.githubusercontent.com/ehassaan/duck-annotate/main/frontend/public/logos/dl_dark.png" alt="Project logo"></a>
 </p>
 
 <div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![License](https://img.shields.io/badge/dynamic/json?label=version&query=version&url=https://raw.githubusercontent.com/ehassaan/duck-annotate/main/frontend/package.json)](https://ehassaan.github.io/duck-annotate)
+[![License](https://img.shields.io/badge/dynamic/json?label=version&query=version&url=https://raw.githubusercontent.com/ehassaan/duck-annotate/main/frontend/package.json)](https://annotate.ducklake.io)
 [![GitHub Issues](https://img.shields.io/github/issues/ehassaan/duck-annotate.svg)](https://github.com/ehassaan/duck-annotate/issues)
 [![License](https://img.shields.io/badge/dynamic/json?label=license&query=license&url=https://raw.githubusercontent.com/ehassaan/duck-annotate/main/frontend/package.json)](/LICENSE)
 
@@ -69,8 +69,8 @@ Duck Annotate gets inspiration from shift left approach to data governance. The 
 - ./.github/ - CI/CD pipelines to build and deploy
 
 ## API Docs
-- Backend (Open API / Swagger)
-- Auth (Open API / Swagger)
+- [Backend (Open API / Swagger)](https://api.annotate.ducklake.io/swagger)
+- [Auth (Open API / Swagger)](https://api.annotate.ducklake.io/api/auth/swagger)
 
 ## Deployment
 

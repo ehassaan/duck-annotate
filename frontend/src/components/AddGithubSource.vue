@@ -6,12 +6,10 @@
         <DynamicFields :fields="formOpts" v-model="vmForm"></DynamicFields>
 
         <div>
-            <v-btn :disabled="!destinationId" :class="$style.button" type="submit" :loading="loading"
+            <v-btn :class="$style.button" type="submit" :loading="loading"
                 color="primary">Create</v-btn>
             <v-btn :class="$style.button" type="button" @click="() => emit('cancel')" color="secondary">Cancel</v-btn>
         </div>
-
-        <label v-if="!destinationId">Please connect Motherduck first {{ destinationId }}</label>
 
     </v-form>
 
@@ -29,7 +27,7 @@ import * as md from "@/services/motherduck";
 const message = ref("");
 const showMessage = ref(false);
 const loading = ref(false);
-const destinationId = computed(() => md.connInfo?.destinationId);
+// const destinationId = computed(() => md.connInfo?.destinationId);
 
 const emit = defineEmits(["created", "cancel"]);
 
@@ -101,6 +99,13 @@ onMounted(async () => {
 
 
 async function submit(ev: SubmitEventPromise) {
+
+    if (!md.connInfo?.destinationId) {
+        message.value = "Motherduck is not initialized";
+        showMessage.value = true;
+        return;
+    }
+
     const validation = await ev;
     if (!validation.valid) return;
 

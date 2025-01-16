@@ -79,7 +79,7 @@ const schemaGraph = computed(() => {
 
 
 onMounted(async () => {
-    fetchSources();
+    await fetchSources();
     setInterval(async () => {
         try {
             await refreshSources();

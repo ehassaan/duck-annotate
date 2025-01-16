@@ -3,14 +3,14 @@
 
         <v-label :class="$style.field">{{ message }}</v-label>
 
-        <v-btn v-if="destinationId" :class="$style.button" type="button" @click="disconnect" block
-            color="primary">Disconnect</v-btn>
+        <v-btn v-if="destinationId" :loading="loadingConnect" :class="$style.button" type="button" @click="disconnect"
+            block color="primary">Disconnect</v-btn>
 
-        <v-text-field type="password" density="default" :class="$style.field" v-if="!destinationId && !loadingConnect" required
-            v-model="vmToken" label="Token"></v-text-field>
+        <v-text-field type="password" density="default" :class="$style.field" v-if="!destinationId && !loadingConnect"
+            required v-model="vmToken" label="Token"></v-text-field>
 
-        <v-btn v-if="!destinationId" :loading="loadingConnect" :class="$style.button" type="button" @click="connect" block
-            color="primary">Connect</v-btn>
+        <v-btn v-if="!destinationId" :loading="loadingConnect" :class="$style.button" type="button" @click="connect"
+            block color="primary">Connect</v-btn>
 
         <v-select density="default" v-model="vmDatabase" :class="$style.field" :items="databases"
             @update:model-value="fetchSchemas" label="Select Database"></v-select>
@@ -24,7 +24,7 @@
         <v-select density="compact" v-if="!vmIsAllTables" :class="$style.field" v-model="vmSelectedTables"
             :loading="loadingTables" :items="tables" multiple label="Select Tables to Annotate"></v-select> -->
 
-        <v-btn :class="$style.button" :loading="loadingConnect" type="button" @click="submit" block
+        <v-btn :class="$style.button" :loading="loadingSave" type="button" @click="submit" block
             color="primary">Save</v-btn>
 
     </v-form>
@@ -84,6 +84,9 @@ async function disconnect() {
             console.error("Error deleting source: ", res.error);
             return;
         }
+        destinationId.value = undefined;
+        vmToken.value = "";
+        emit("disconnect");
     }
     catch (err) {
 

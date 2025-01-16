@@ -17,7 +17,8 @@
             </template>
             <template v-slot:default>
                 <p :class="$style.sync_status">
-                    <v-icon v-if="item.lastSync" size="x-small" :icon="item.lastStatus === 'succeeded' ? 'mdi-check' : 'mdi-close'"
+                    <v-icon v-if="item.lastSync" size="x-small"
+                        :icon="item.lastStatus === 'succeeded' ? 'mdi-check' : 'mdi-close'"
                         :class="[$style.sync_status_icon, item.lastStatus == 'succeeded' ? $style.status_success : $style.status_error]"></v-icon>
                     <span>Last Sync: {{ item.lastSync ?
                         item.lastSync.toISOString() + ` - (${item.rowsSynced} rows synced)`
@@ -29,10 +30,10 @@
             <template v-slot:append>
                 <div :class="$style.sourceActions">
 
-                    <v-btn color="primary" v-if="item.connId" :loading="loadingConn" @click="() => syncNow(item)">{{
+                    <v-btn color="primary" v-if="item.connId" :loading="item.loading" @click="() => syncNow(item)">{{
                         item.isSyncing ? 'Syncing...' : 'Sync Now' }}</v-btn>
 
-                    <v-btn color="primary" :loading="loadingConn" @click="() => createConnection(item)"
+                    <v-btn color="primary" :loading="item.loading" @click="() => createConnection(item)"
                         v-if="!item.connId">Create
                         Connection</v-btn>
                     <v-btn color="danger" icon="mdi-trash-can-outline" variant="text"
@@ -59,7 +60,6 @@ import AddGithubSource from './AddGithubSource.vue';
 const message = ref("");
 const showMessage = ref(false);
 const loading = ref(false);
-const loadingConn = ref(false);
 const creatingGh = ref(false);
 const connections = ref<any[]>([]);
 let interval = null;
@@ -108,7 +108,8 @@ async function refreshSources() {
             isSyncing: false,
             lastSync: null,
             rowsScanned: null,
-            lastStatus: null
+            lastStatus: null,
+            loading: false,
         };
     });
     connections.value.filter(c => c.connId).map(async (c) => {
@@ -184,7 +185,7 @@ async function checkSyncStatus(conn: any) {
 
 async function syncNow(conn: any) {
     if (conn.isSyncing) return;
-    loadingConn.value = true;
+    conn.loading = true;
     const resConn = await $fetch('/api/airbyte/v1/jobs', {
         method: 'POST',
         credentials: 'include',
@@ -193,7 +194,7 @@ async function syncNow(conn: any) {
             "connectionId": conn.connId
         }
     });
-    loadingConn.value = false;
+    conn.loading = false;
     conn.isSyncing = true;
     if (resConn.error) {
         message.value = "Failed to trigger sync: " + (resConn as any).data?.message;
@@ -203,41 +204,44 @@ async function syncNow(conn: any) {
 }
 
 async function createConnection(source: any) {
-    loadingConn.value = true;
-    const resConn = await $fetch('/api/airbyte/v1/connections', {
-        method: 'POST',
-        credentials: 'include',
-        body: {
-            "namespaceDefinition": "destination",
-            "nonBreakingSchemaUpdatesBehavior": "propagate_fully",
-            "status": "active",
-            "dataResidency": "auto",
-            "destinationId": md.connInfo?.destinationId,
-            "sourceId": source.key,
-            "prefix": "",
-            "configurations": [
-                {
-                    streams: [
-                        { name: "issues" },
-                        { name: "comments" },
-                        { name: "repositories" }
-                    ]
-                }
-            ],
-            "name": source.name
-        }
-    });
-    loadingConn.value = false;
-    if (resConn.error) {
-        message.value = "Failed to create data source: " + (resConn as any).data?.message;
-        showMessage.value = true;
-        return;
-    }
+    source.loading = true;
     try {
+        const resConn = await $fetch('/api/airbyte/v1/connections', {
+            method: 'POST',
+            credentials: 'include',
+            body: {
+                "namespaceDefinition": "destination",
+                "nonBreakingSchemaUpdatesBehavior": "propagate_fully",
+                "status": "active",
+                "dataResidency": "auto",
+                "destinationId": md.connInfo?.destinationId,
+                "sourceId": source.key,
+                "prefix": "",
+                "configurations": [
+                    {
+                        streams: [
+                            { name: "issues" },
+                            { name: "comments" },
+                            { name: "repositories" }
+                        ]
+                    }
+                ],
+                "name": source.name
+            }
+        });
+        if (resConn.error) {
+            message.value = "Failed to create data source: " + (resConn as any).data?.message;
+            showMessage.value = true;
+            return;
+        }
+
         await refreshSources();
     }
     catch (err) {
         console.log("Error: ", err);
+    }
+    finally {
+        source.loading = false;
     }
 }
 

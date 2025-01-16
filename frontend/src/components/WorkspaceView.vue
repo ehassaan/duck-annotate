@@ -97,6 +97,7 @@ onBeforeMount(async () => {
 });
 
 async function saveCreds(data: any) {
+    md.setCreds(data);
     localStorage.setItem("motherduck", JSON.stringify(data));
     tab.value = "schema";
 }

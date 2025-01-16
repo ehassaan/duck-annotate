@@ -6,12 +6,9 @@
         <DynamicFields :fields="optsPostgres" v-model="vmForm"></DynamicFields>
 
         <div>
-            <v-btn :disabled="!isMd" :class="$style.button" type="submit" :loading="loading"
-                color="primary">Fetch</v-btn>
+            <v-btn :class="$style.button" type="submit" :loading="loading" color="primary">Fetch</v-btn>
             <v-btn :class="$style.button" type="button" @click="() => emit('cancel')" color="secondary">Cancel</v-btn>
         </div>
-
-        <label v-if="!isMd">Please connect Motherduck first</label>
 
     </v-form>
 
@@ -31,7 +28,6 @@ import _ from 'lodash';
 const message = ref("");
 const showMessage = ref(false);
 const loading = ref(false);
-const isMd = computed(() => md.connInfo != null);
 
 const vmForm = ref({
     name: "MyDataSource",
@@ -96,6 +92,11 @@ onMounted(async () => {
 
 
 async function submit(ev: SubmitEventPromise) {
+    if (!md.connInfo) {
+        message.value = "Please connect Motherduck first";
+        showMessage.value = true;
+        return;
+    }
     showMessage.value = false;
     const validation = await ev;
     if (!validation.valid) return;
