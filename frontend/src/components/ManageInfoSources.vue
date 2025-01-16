@@ -234,8 +234,7 @@ async function createConnection(source: any) {
             showMessage.value = true;
             return;
         }
-
-        await refreshSources();
+        await fetchSources();
     }
     catch (err) {
         console.log("Error: ", err);
