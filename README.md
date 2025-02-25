@@ -18,7 +18,7 @@
     <br> 
 </p>
 
-- [Duck Annotate (Airbyte - Motherduck Hackathon)](#duck-annotate-airbyte---motherduck-hackathon)
+- [Duck Annotate](#duck-annotate)
 - [How it Works?](#how-it-works)
   - [Data Extraction](#data-extraction)
   - [Source Code Scanning](#source-code-scanning)
@@ -37,7 +37,7 @@
 - [Contributions](#contributions)
 
 
-# Duck Annotate (Airbyte - Motherduck Hackathon)
+# Duck Annotate
 
 Duck Annotate is a data annotation tool that uses Airbyte to pull data from different sources and then generates column and table metadata for your Motherduck data lake.
 
