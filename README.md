@@ -101,7 +101,6 @@ Duck Annotate gets inspiration from shift left approach to data governance. The 
 - Frontend is deployed on Github pages
 - Backend is deployed on Azure Websites
 - Backend database is Postgres Neon
-- Motherduck and Airbyte trial accounts were used for this hackathon.
 
 # Demo
 
